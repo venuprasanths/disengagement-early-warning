@@ -201,7 +201,41 @@ To verify that the Main Model's alert timing is not an artifact of future lookah
       student_df["lms_logins"].rolling(window=3, min_periods=1).mean()
   )
   ```
-* **Audit Finding**: In pandas, `.rolling(window=3, min_periods=1)` defaults strictly to `center=False` and `closed='right'`. There are **zero instances of `center=True` or negative shift operations** in the entire codebase. Every window covers only $[t-2, t-1, t]$.
+#### 4. Audit of `_recent` Features: Bi-Weekly Forward-Fill & Zero-Lookahead Verification
+To verify that the top-ranking `_recent` features (`quiz_score_recent`, `survey_sentiment_recent`, `confidence_rating_recent`) do not introduce lookahead leakage through improper imputation of bi-weekly missing values (which are `None`/`NaN` on odd weeks), we audited `extract_student_features` in `src/features.py` (lines 53, 97, 115–123):
+
+```python
+# 1. Guarantee strict ascending chronological order
+student_df = student_df.sort_values("week").copy()
+
+# 2. Assessment: Carry forward most recent quiz score; default to 50.0 prior to week 1 quiz
+student_df["quiz_score_recent"] = student_df["quiz_score"].ffill().fillna(50.0)
+
+# 3. Bi-weekly survey sentiment: Forward-fill last observation; default to neutral 0.0 before first survey
+student_df["survey_sentiment_recent"] = (
+    student_df["survey_sentiment"].ffill().fillna(0.0)
+)
+
+# 4. Bi-weekly student confidence: Forward-fill last observation; default to neutral 3.0 before first rating
+student_df["confidence_rating_recent"] = (
+    student_df["confidence_rating"].ffill().fillna(3.0)
+)
+```
+
+* **Audit Finding**:
+  1. **Strict Forward Propagation**: Pandas `.ffill()` (`Series.ffill()`) propagates strictly downwards along the index (from past week to future week). At odd weeks $w \in \{3, 5, 7, \dots\}$, the value from the preceding even week $w-1$ is carried forward. It **never pulls from future week $w+1$**.
+  2. **Uninformative Priors for Initial Missingness**: For initial weeks prior to the first survey (Week 1), `.ffill()` produces `NaN` because there is no prior observation. `.fillna(0.0)` sets this initial unobserved state to `0.0` (the neutral midpoint on the $[-1.0, +1.0]$ sentiment scale), and `.fillna(3.0)` sets confidence to `3.0` (the neutral midpoint on the 1–5 scale).
+  3. **Zero Backward Fill**: There are **zero instances of `.bfill()`, `.backfill()`, or `.interpolate()`** in feature engineering.
+  4. **Empirical Trace Verification**:
+     ```
+     week  quiz_score  quiz_score_recent  survey_sentiment  survey_sentiment_recent  confidence_rating  confidence_rating_recent
+        1        83.5               83.5               NaN                     0.00                NaN                       3.0
+        2        81.6               81.6              1.00                     1.00                4.0                       4.0
+        3        79.2               79.2               NaN                     1.00                NaN                       4.0
+        4        77.4               77.4              0.57                     0.57                5.0                       5.0
+        5        74.6               74.6               NaN                     0.57                NaN                       5.0
+     ```
+     At Week 3, `survey_sentiment_recent` is $1.00$ (carried forward from Week 2), **not $0.57$ (Week 4)**. At Week 5, it is $0.57$ (from Week 4), **not $0.49$ (Week 6)**.
 
 #### Why Does the Main Model Alert at Median 0.0 Days Relative to Onset?
 * Ground-truth disengagement is defined as: `latent_engagement < 0.40 for >= 2 consecutive weeks`.
