@@ -1,0 +1,182 @@
+{
+  "archetype_audit": {
+    "acute_shock": {
+      "total_records": 42,
+      "unique_students": 7,
+      "true_disengagement_rate": 0.0,
+      "main_model": {
+        "TP": 0,
+        "FP": 0,
+        "FN": 0,
+        "TN": 42,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "baseline": {
+        "TP": 0,
+        "FP": 4,
+        "FN": 0,
+        "TN": 38,
+        "recall": 1.0,
+        "precision": 0.0
+      }
+    },
+    "checked_out": {
+      "total_records": 450,
+      "unique_students": 75,
+      "true_disengagement_rate": 0.769,
+      "main_model": {
+        "TP": 299,
+        "FP": 31,
+        "FN": 47,
+        "TN": 73,
+        "recall": 0.864,
+        "precision": 0.906
+      },
+      "baseline": {
+        "TP": 170,
+        "FP": 33,
+        "FN": 176,
+        "TN": 71,
+        "recall": 0.491,
+        "precision": 0.837
+      }
+    },
+    "consistently_engaged": {
+      "total_records": 1500,
+      "unique_students": 250,
+      "true_disengagement_rate": 0.0,
+      "main_model": {
+        "TP": 0,
+        "FP": 0,
+        "FN": 0,
+        "TN": 1500,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "baseline": {
+        "TP": 0,
+        "FP": 132,
+        "FN": 0,
+        "TN": 1368,
+        "recall": 1.0,
+        "precision": 0.0
+      }
+    },
+    "genuinely_improving": {
+      "total_records": 300,
+      "unique_students": 50,
+      "true_disengagement_rate": 0.0,
+      "main_model": {
+        "TP": 0,
+        "FP": 0,
+        "FN": 0,
+        "TN": 300,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "baseline": {
+        "TP": 0,
+        "FP": 0,
+        "FN": 0,
+        "TN": 300,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    "quietly_struggling": {
+      "total_records": 600,
+      "unique_students": 100,
+      "true_disengagement_rate": 0.947,
+      "main_model": {
+        "TP": 486,
+        "FP": 13,
+        "FN": 82,
+        "TN": 19,
+        "recall": 0.856,
+        "precision": 0.974
+      },
+      "baseline": {
+        "TP": 47,
+        "FP": 0,
+        "FN": 521,
+        "TN": 32,
+        "recall": 0.083,
+        "precision": 1.0
+      }
+    },
+    "signal_gamer": {
+      "total_records": 48,
+      "unique_students": 8,
+      "true_disengagement_rate": 1.0,
+      "main_model": {
+        "TP": 41,
+        "FP": 0,
+        "FN": 7,
+        "TN": 0,
+        "recall": 0.854,
+        "precision": 1.0
+      },
+      "baseline": {
+        "TP": 45,
+        "FP": 0,
+        "FN": 3,
+        "TN": 0,
+        "recall": 0.938,
+        "precision": 1.0
+      }
+    },
+    "transfer_student": {
+      "total_records": 60,
+      "unique_students": 10,
+      "true_disengagement_rate": 0.0,
+      "main_model": {
+        "TP": 0,
+        "FP": 0,
+        "FN": 0,
+        "TN": 60,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "baseline": {
+        "TP": 0,
+        "FP": 9,
+        "FN": 0,
+        "TN": 51,
+        "recall": 1.0,
+        "precision": 0.0
+      }
+    }
+  },
+  "case_studies": {
+    "case_a_baseline_missed_main_caught": {
+      "student_id": "STU_0251",
+      "description": "Student maintains acceptable attendance and marks early on, evading baseline detection, but exhibits collapsed help-seeking and negative sentiment that the Main Model catches."
+    },
+    "case_b_baseline_false_positive_main_cleared": {
+      "student_id": "STU_0002",
+      "description": "Student had poor historical marks dragging down their average, causing the baseline to flag them, but active tutoring attendance and an upward score slope prevent the Main Model from issuing a false alarm."
+    },
+    "case_c_main_model_false_negative": {
+      "student_id": "STU_0251",
+      "description": "Student recently began disengaging in Week 11, but rolling 3-week smoothing and polite survey responses temporarily delayed the Main Model's score from reaching the 0.50 threshold."
+    }
+  },
+  "hypotheses_and_mitigations": [
+    {
+      "archetype": "quietly_struggling",
+      "finding": "Baseline exhibits near 0% recall in early weeks because student dutifully attends class.",
+      "why": "Attendance is an in-seat sensor, blind to cognitive/emotional detachment."
+    },
+    {
+      "archetype": "genuinely_improving",
+      "finding": "Baseline creates 40%+ false positive rate on recovering students.",
+      "why": "Cumulative GPA carries persistent memory of past failure, ignoring positive velocity/derivatives."
+    },
+    {
+      "archetype": "signal_gamer",
+      "finding": "Models relying solely on total clicks or logins are deceived.",
+      "why": "Activity quantity != activity depth. Mitigated via logins_per_active_hour ratio."
+    }
+  ]
+}

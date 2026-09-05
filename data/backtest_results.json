@@ -1,0 +1,253 @@
+{
+  "split_definition": {
+    "train_weeks": "1 to 10",
+    "test_weeks": "11 to 16",
+    "train_samples": 4940,
+    "test_samples": 3000
+  },
+  "baseline_metrics": {
+    "model_name": "Lagging Attendance+Marks Baseline (Current Practice)",
+    "precision": 0.595,
+    "recall": 0.272,
+    "f1": 0.374,
+    "roc_auc": 0.585,
+    "brier_score": 0.304
+  },
+  "main_model_metrics": {
+    "model_name": "Transparent Multi-Signal Model (5-Family Fusion)",
+    "precision": 0.949,
+    "recall": 0.859,
+    "f1": 0.902,
+    "roc_auc": 0.992,
+    "brier_score": 0.054,
+    "mean_interval_width": 0.053,
+    "interval_coverage_rate": 0.935
+  },
+  "calibration": {
+    "ece": 0.0947,
+    "brier_score": 0.0543,
+    "bins": [
+      {
+        "bin": 0,
+        "count": 1900,
+        "avg_confidence": 0.003,
+        "true_frequency": 0.0
+      },
+      {
+        "bin": 2,
+        "count": 5,
+        "avg_confidence": 0.264,
+        "true_frequency": 0.2
+      },
+      {
+        "bin": 3,
+        "count": 43,
+        "avg_confidence": 0.369,
+        "true_frequency": 0.465
+      },
+      {
+        "bin": 4,
+        "count": 182,
+        "avg_confidence": 0.451,
+        "true_frequency": 0.632
+      },
+      {
+        "bin": 5,
+        "count": 141,
+        "avg_confidence": 0.553,
+        "true_frequency": 0.766
+      },
+      {
+        "bin": 6,
+        "count": 348,
+        "avg_confidence": 0.661,
+        "true_frequency": 0.968
+      },
+      {
+        "bin": 7,
+        "count": 381,
+        "avg_confidence": 0.728,
+        "true_frequency": 1.0
+      }
+    ]
+  },
+  "lead_time": {
+    "disengaged_cohort_size": 177,
+    "median_lead_time_weeks": 5.0,
+    "median_lead_time_days": 35.0,
+    "mean_lead_time_days": 12.7,
+    "ci_95_lead_time_days": [
+      6.4,
+      19.0
+    ],
+    "students_flagged_earlier": 111,
+    "students_flagged_tied": 3,
+    "students_flagged_later": 63,
+    "sample_details": [
+      {
+        "student_id": "STU_0251",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 10,
+        "first_main_flag_week": 9,
+        "first_baseline_flag_week": 16,
+        "lead_time_weeks": 7,
+        "lead_time_days": 49
+      },
+      {
+        "student_id": "STU_0252",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 9,
+        "first_main_flag_week": 9,
+        "first_baseline_flag_week": 16,
+        "lead_time_weeks": 7,
+        "lead_time_days": 49
+      },
+      {
+        "student_id": "STU_0253",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 8,
+        "first_main_flag_week": 8,
+        "first_baseline_flag_week": null,
+        "lead_time_weeks": 9,
+        "lead_time_days": 63
+      },
+      {
+        "student_id": "STU_0254",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 9,
+        "first_main_flag_week": 9,
+        "first_baseline_flag_week": 16,
+        "lead_time_weeks": 7,
+        "lead_time_days": 49
+      },
+      {
+        "student_id": "STU_0255",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 15,
+        "first_main_flag_week": 12,
+        "first_baseline_flag_week": 16,
+        "lead_time_weeks": 4,
+        "lead_time_days": 28
+      },
+      {
+        "student_id": "STU_0256",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 13,
+        "first_main_flag_week": 14,
+        "first_baseline_flag_week": null,
+        "lead_time_weeks": 3,
+        "lead_time_days": 21
+      },
+      {
+        "student_id": "STU_0257",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 10,
+        "first_main_flag_week": 10,
+        "first_baseline_flag_week": null,
+        "lead_time_weeks": 7,
+        "lead_time_days": 49
+      },
+      {
+        "student_id": "STU_0258",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 9,
+        "first_main_flag_week": 10,
+        "first_baseline_flag_week": null,
+        "lead_time_weeks": 7,
+        "lead_time_days": 49
+      },
+      {
+        "student_id": "STU_0259",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 12,
+        "first_main_flag_week": 12,
+        "first_baseline_flag_week": null,
+        "lead_time_weeks": 5,
+        "lead_time_days": 35
+      },
+      {
+        "student_id": "STU_0260",
+        "archetype": "quietly_struggling",
+        "first_true_disengaged_week": 11,
+        "first_main_flag_week": 10,
+        "first_baseline_flag_week": 16,
+        "lead_time_weeks": 6,
+        "lead_time_days": 42
+      }
+    ]
+  },
+  "trade_off_curve": [
+    {
+      "threshold": 0.1,
+      "counselor_recall": 1.0,
+      "student_parent_precision": 0.875,
+      "f1_score": 0.933,
+      "flagged_count": 1100,
+      "flagged_pct": 36.7
+    },
+    {
+      "threshold": 0.2,
+      "counselor_recall": 1.0,
+      "student_parent_precision": 0.875,
+      "f1_score": 0.933,
+      "flagged_count": 1100,
+      "flagged_pct": 36.7
+    },
+    {
+      "threshold": 0.3,
+      "counselor_recall": 0.999,
+      "student_parent_precision": 0.878,
+      "f1_score": 0.934,
+      "flagged_count": 1095,
+      "flagged_pct": 36.5
+    },
+    {
+      "threshold": 0.4,
+      "counselor_recall": 0.978,
+      "student_parent_precision": 0.894,
+      "f1_score": 0.934,
+      "flagged_count": 1052,
+      "flagged_pct": 35.1
+    },
+    {
+      "threshold": 0.5,
+      "counselor_recall": 0.859,
+      "student_parent_precision": 0.949,
+      "f1_score": 0.902,
+      "flagged_count": 870,
+      "flagged_pct": 29.0
+    },
+    {
+      "threshold": 0.6,
+      "counselor_recall": 0.746,
+      "student_parent_precision": 0.985,
+      "f1_score": 0.849,
+      "flagged_count": 729,
+      "flagged_pct": 24.3
+    },
+    {
+      "threshold": 0.7,
+      "counselor_recall": 0.396,
+      "student_parent_precision": 1.0,
+      "f1_score": 0.567,
+      "flagged_count": 381,
+      "flagged_pct": 12.7
+    },
+    {
+      "threshold": 0.8,
+      "counselor_recall": 0.0,
+      "student_parent_precision": 0.0,
+      "f1_score": 0.0,
+      "flagged_count": 0,
+      "flagged_pct": 0.0
+    },
+    {
+      "threshold": 0.9,
+      "counselor_recall": 0.0,
+      "student_parent_precision": 0.0,
+      "f1_score": 0.0,
+      "flagged_count": 0,
+      "flagged_pct": 0.0
+    }
+  ]
+}
