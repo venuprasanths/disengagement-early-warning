@@ -69,100 +69,175 @@ def evaluate_lead_time(
     threshold: float = 0.50,
 ) -> Dict[str, Any]:
     """
-    Computes student-level lead time advantage:
-    How many weeks/days earlier does the Main Model flag students who ultimately disengage?
+    Computes censoring-aware lead time and Kaplan-Meier survival analysis.
+    Explicitly separates:
+      - Population (a): Both models flag within observation window (uncensored)
+      - Population (b): Baseline never flags within window (right-censored)
+      - Population (c): Main model never flags within window (false negatives)
     """
-    # Find all students who ever became disengaged
-    disengaged_students = (
-        df_cohort[df_cohort["is_disengaged"] == True]["student_id"].unique()
-    )
+    disengaged_students = df_cohort[df_cohort["is_disengaged"] == True]["student_id"].unique()
+    total_disengaged = len(disengaged_students)
 
-    X_all, _, audit_all = prepare_feature_matrix(df_cohort)
+    X_all, _, _ = prepare_feature_matrix(df_cohort)
     main_scores = main_model.predict_risk_score(X_all)
     df_eval = df_cohort.copy()
     df_eval["main_score"] = main_scores
     df_eval["main_flag"] = main_scores >= threshold
     df_eval["baseline_flag"] = baseline_model.predict(df_cohort)
 
-    lead_time_weeks = []
-    earlier_count = 0
-    tied_count = 0
-    later_count = 0
-
-    student_lead_details = []
-
+    records = []
     for s_id in disengaged_students:
         s_data = df_eval[df_eval["student_id"] == s_id].sort_values("week")
-        archetype = s_data["archetype"].iloc[0]
-
-        # First week student was actually disengaged
-        true_disengage_weeks = s_data[s_data["is_disengaged"] == True]["week"]
-        first_true_week = int(true_disengage_weeks.min()) if not true_disengage_weeks.empty else 16
-
-        # Earliest week flagged by Main Model
-        main_flagged = s_data[s_data["main_flag"] == True]["week"]
-        first_main_week = int(main_flagged.min()) if not main_flagged.empty else 17
-
-        # Earliest week flagged by Baseline
-        base_flagged = s_data[s_data["baseline_flag"] == True]["week"]
-        first_base_week = int(base_flagged.min()) if not base_flagged.empty else 17
-
-        # Lead time advantage = base_week - main_week (positive means main model flagged earlier)
-        diff_weeks = first_base_week - first_main_week
-        lead_time_weeks.append(diff_weeks)
-
-        if diff_weeks > 0:
-            earlier_count += 1
-        elif diff_weeks == 0:
-            tied_count += 1
+        arch = s_data["archetype"].iloc[0]
+        
+        true_weeks = s_data[s_data["is_disengaged"] == True]["week"]
+        first_true = int(true_weeks.min()) if not true_weeks.empty else 16
+        
+        m_flagged = s_data[s_data["main_flag"] == True]["week"]
+        b_flagged = s_data[s_data["baseline_flag"] == True]["week"]
+        
+        first_m = int(m_flagged.min()) if not m_flagged.empty else None
+        first_b = int(b_flagged.min()) if not b_flagged.empty else None
+        
+        if first_m is not None and first_b is not None:
+            pop = "both_flagged"
+            lead_w = first_b - first_m
+            lead_d = lead_w * 7.0
+        elif first_m is not None and first_b is None:
+            pop = "baseline_never_flagged"
+            lead_w = None
+            lead_d = None
+        elif first_m is None and first_b is not None:
+            pop = "main_never_flagged"
+            lead_w = None
+            lead_d = None
         else:
-            later_count += 1
+            pop = "neither_flagged"
+            lead_w = None
+            lead_d = None
 
-        student_lead_details.append({
+        records.append({
             "student_id": s_id,
-            "archetype": archetype,
-            "first_true_disengaged_week": first_true_week,
-            "first_main_flag_week": first_main_week if first_main_week <= 16 else None,
-            "first_baseline_flag_week": first_base_week if first_base_week <= 16 else None,
-            "lead_time_weeks": diff_weeks,
-            "lead_time_days": diff_weeks * 7,
+            "archetype": arch,
+            "first_true_week": first_true,
+            "first_main_week": first_m,
+            "first_baseline_week": first_b,
+            "population": pop,
+            "lead_time_weeks": lead_w,
+            "lead_time_days": lead_d,
+            "main_days_before_onset": (first_true - first_m) * 7.0 if first_m is not None else None,
+            "base_days_before_onset": (first_true - first_b) * 7.0 if first_b is not None else None,
         })
 
-    lead_arr_w = np.array(lead_time_weeks)
-    lead_arr_d = lead_arr_w * 7.0
+    lead_df = pd.DataFrame(records)
 
-    median_weeks = float(np.median(lead_arr_w))
-    median_days = float(np.median(lead_arr_d))
-    mean_weeks = float(np.mean(lead_arr_w))
-    mean_days = float(np.mean(lead_arr_d))
+    # Population counts and percentages
+    pop_a = lead_df[lead_df["population"] == "both_flagged"]
+    pop_b = lead_df[lead_df["population"] == "baseline_never_flagged"]
+    pop_c = lead_df[lead_df["population"] == "main_never_flagged"]
 
-    # Bootstrap 95% CI of the MEDIAN
-    boot_medians = [
-        np.median(np.random.choice(lead_arr_d, size=len(lead_arr_d), replace=True))
-        for _ in range(2000)
-    ]
-    ci_med_low = float(np.percentile(boot_medians, 2.5))
-    ci_med_high = float(np.percentile(boot_medians, 97.5))
+    n_both = len(pop_a)
+    n_base_censored = len(pop_b)
+    n_main_censored = len(pop_c)
 
-    # Bootstrap 95% CI of the MEAN
-    boot_means = [
-        np.mean(np.random.choice(lead_arr_d, size=len(lead_arr_d), replace=True))
-        for _ in range(2000)
-    ]
-    ci_mean_low = float(np.percentile(boot_means, 2.5))
-    ci_mean_high = float(np.percentile(boot_means, 97.5))
+    pct_base_censored = round((n_base_censored / total_disengaged) * 100, 1)
+    pct_main_censored = round((n_main_censored / total_disengaged) * 100, 1)
+
+    # Population (a) statistics
+    both_leads_d = pop_a["lead_time_days"].values
+    both_leads_w = pop_a["lead_time_weeks"].values
+
+    med_d = float(np.median(both_leads_d))
+    mean_d = float(np.mean(both_leads_d))
+    q25_d = float(np.percentile(both_leads_d, 25))
+    q75_d = float(np.percentile(both_leads_d, 75))
+
+    boot_med = [np.median(np.random.choice(both_leads_d, size=len(both_leads_d), replace=True)) for _ in range(2000)]
+    boot_mean = [np.mean(np.random.choice(both_leads_d, size=len(both_leads_d), replace=True)) for _ in range(2000)]
+
+    ci_med = [round(float(np.percentile(boot_med, 2.5)), 1), round(float(np.percentile(boot_med, 97.5)), 1)]
+    ci_mean = [round(float(np.percentile(boot_mean, 2.5)), 1), round(float(np.percentile(boot_mean, 97.5)), 1)]
+
+    # Kaplan-Meier Survival Estimator
+    def compute_km(first_weeks, max_t=16):
+        times = [w if (w is not None and w <= max_t) else max_t for w in first_weeks]
+        events = [1 if (w is not None and w <= max_t) else 0 for w in first_weeks]
+        times = np.array(times)
+        events = np.array(events)
+        unique_times = np.arange(1, max_t + 1)
+        s_t = 1.0
+        n_at_risk = len(times)
+        km_median_discrete = None
+        km_median_interpolated = None
+        s_history = {}
+        prev_s = 1.0
+        for t in unique_times:
+            d_t = int(np.sum((times == t) & (events == 1)))
+            c_t = int(np.sum((times == t) & (events == 0)))
+            if n_at_risk > 0:
+                s_t *= (1.0 - d_t / n_at_risk)
+            s_history[int(t)] = round(float(s_t), 4)
+            if km_median_discrete is None and s_t <= 0.50:
+                km_median_discrete = int(t)
+            if km_median_interpolated is None and s_t <= 0.50:
+                if prev_s != s_t:
+                    frac = (prev_s - 0.50) / (prev_s - s_t)
+                    km_median_interpolated = round(float((t - 1) + frac), 2)
+                else:
+                    km_median_interpolated = float(t)
+            prev_s = s_t
+            n_at_risk -= (d_t + c_t)
+        return {
+            "discrete_week": km_median_discrete or max_t,
+            "interpolated_week": km_median_interpolated or float(max_t),
+            "curve": s_history,
+        }
+
+    km_main = compute_km(lead_df["first_main_week"])
+    km_base = compute_km(lead_df["first_baseline_week"])
+    km_lead_advantage_weeks = km_main["discrete_week"] - km_main["discrete_week"]  # placeholder
+    km_disc_lead_w = km_base["discrete_week"] - km_main["discrete_week"]
+    km_interp_lead_w = round(km_base["interpolated_week"] - km_main["interpolated_week"], 2)
+
+    # Histogram frequency counts
+    hist_w = pd.Series(both_leads_w).value_counts().sort_index()
+    histogram = {int(k): int(v) for k, v in hist_w.items()}
 
     return {
-        "disengaged_cohort_size": len(disengaged_students),
-        "median_lead_time_weeks": round(median_weeks, 2),
-        "median_lead_time_days": round(median_days, 1),
-        "ci_95_median_lead_time_days": [round(ci_med_low, 1), round(ci_med_high, 1)],
-        "mean_lead_time_days": round(mean_days, 1),
-        "ci_95_mean_lead_time_days": [round(ci_mean_low, 1), round(ci_mean_high, 1)],
-        "students_flagged_earlier": earlier_count,
-        "students_flagged_tied": tied_count,
-        "students_flagged_later": later_count,
-        "sample_details": student_lead_details[:10],
+        "disengaged_cohort_size": total_disengaged,
+        "population_breakdown": {
+            "both_flagged_count": n_both,
+            "both_flagged_pct": round((n_both / total_disengaged) * 100, 1),
+            "baseline_never_flagged_count": n_base_censored,
+            "baseline_never_flagged_pct": pct_base_censored,
+            "main_never_flagged_count": n_main_censored,
+            "main_never_flagged_pct": pct_main_censored,
+        },
+        "uncensored_lead_time_pop_a": {
+            "median_lead_days": round(med_d, 1),
+            "median_lead_weeks": round(med_d / 7.0, 1),
+            "ci_95_median_days": ci_med,
+            "mean_lead_days": round(mean_d, 1),
+            "ci_95_mean_days": ci_mean,
+            "iqr_q25_q75_days": [round(q25_d, 1), round(q75_d, 1)],
+            "lead_time_histogram_weeks": histogram,
+        },
+        "kaplan_meier": {
+            "km_median_detection_week_main": km_main["discrete_week"],
+            "km_median_interpolated_week_main": km_main["interpolated_week"],
+            "km_median_detection_week_baseline": km_base["discrete_week"],
+            "km_median_interpolated_week_baseline": km_base["interpolated_week"],
+            "km_lead_time_advantage_weeks": km_disc_lead_w,
+            "km_lead_time_advantage_days": km_disc_lead_w * 7,
+            "km_lead_time_interpolated_advantage_weeks": km_interp_lead_w,
+            "km_lead_time_interpolated_advantage_days": round(km_interp_lead_w * 7.0, 1),
+            "survival_curve_main": km_main["curve"],
+            "survival_curve_baseline": km_base["curve"],
+        },
+        "timing_relative_to_true_onset": {
+            "main_median_days_before_onset": round(float(np.median(pop_a["main_days_before_onset"].dropna())), 1),
+            "base_median_days_before_onset": round(float(np.median(pop_a["base_days_before_onset"].dropna())), 1),
+        },
     }
 
 
@@ -295,10 +370,21 @@ def main():
     print("=" * 50)
     print(f"Baseline F1:   {results['baseline_metrics']['f1']} | Recall: {results['baseline_metrics']['recall']} | Precision: {results['baseline_metrics']['precision']}")
     print(f"Main Model F1: {results['main_model_metrics']['f1']} | Recall: {results['main_model_metrics']['recall']} | Precision: {results['main_model_metrics']['precision']}")
-    print(f"ROC-AUC: Baseline={results['baseline_metrics']['roc_auc']} vs Main={results['main_model_metrics']['roc_auc']}")
-    print(f"LEAD TIME ADVANTAGE: Main model flags at-risk students a median of {results['lead_time']['median_lead_time_days']} days ({results['lead_time']['median_lead_time_weeks']} weeks) EARLIER than baseline!")
-    print(f"  • 95% CI of MEDIAN: [{results['lead_time']['ci_95_median_lead_time_days'][0]}, {results['lead_time']['ci_95_median_lead_time_days'][1]}] days")
-    print(f"  • Mean Lead Time  : {results['lead_time']['mean_lead_time_days']} days | 95% CI of MEAN: [{results['lead_time']['ci_95_mean_lead_time_days'][0]}, {results['lead_time']['ci_95_mean_lead_time_days'][1]}] days")
+    print("-" * 50)
+    print(f"CENSORING BREAKDOWN (N={results['lead_time']['disengaged_cohort_size']} Disengaged Students):")
+    print(f"  • Pop (a) Both Flagged (Uncensored)           : {results['lead_time']['population_breakdown']['both_flagged_count']} ({results['lead_time']['population_breakdown']['both_flagged_pct']}%)")
+    print(f"  • Pop (b) Baseline NEVER Flags (Right-Censored): {results['lead_time']['population_breakdown']['baseline_never_flagged_count']} ({results['lead_time']['population_breakdown']['baseline_never_flagged_pct']}%)")
+    print(f"  • Pop (c) Main Model NEVER Flags              : {results['lead_time']['population_breakdown']['main_never_flagged_count']} ({results['lead_time']['population_breakdown']['main_never_flagged_pct']}%)")
+    print("-" * 50)
+    print("KAPLAN-MEIER SURVIVAL ESTIMATE (TIME-TO-DETECTION):")
+    print(f"  • Main Model KM Median Detection: Week {results['lead_time']['kaplan_meier']['km_median_detection_week_main']} (Interpolated: Week {results['lead_time']['kaplan_meier']['km_median_interpolated_week_main']})")
+    print(f"  • Baseline KM Median Detection  : Week {results['lead_time']['kaplan_meier']['km_median_detection_week_baseline']} (Interpolated: Week {results['lead_time']['kaplan_meier']['km_median_interpolated_week_baseline']})")
+    print(f"  • KM Lead Advantage (Discrete)  : {results['lead_time']['kaplan_meier']['km_lead_time_advantage_days']} days ({results['lead_time']['kaplan_meier']['km_lead_time_advantage_weeks']} weeks earlier)")
+    print(f"  • KM Lead Advantage (Interp)    : {results['lead_time']['kaplan_meier']['km_lead_time_interpolated_advantage_days']} days ({results['lead_time']['kaplan_meier']['km_lead_time_interpolated_advantage_weeks']} weeks earlier)")
+    print("-" * 50)
+    print("POPULATION (a) UNCENSORED LEAD TIME (Both Models Flagged):")
+    print(f"  • Median Lead: {results['lead_time']['uncensored_lead_time_pop_a']['median_lead_days']} days | 95% CI: [{results['lead_time']['uncensored_lead_time_pop_a']['ci_95_median_days'][0]}, {results['lead_time']['uncensored_lead_time_pop_a']['ci_95_median_days'][1]}] days")
+    print(f"  • Mean Lead  : {results['lead_time']['uncensored_lead_time_pop_a']['mean_lead_days']} days | 95% CI: [{results['lead_time']['uncensored_lead_time_pop_a']['ci_95_mean_days'][0]}, {results['lead_time']['uncensored_lead_time_pop_a']['ci_95_mean_days'][1]}] days")
     print("=" * 50)
     print(f"Saved complete results to {args.output}")
 

@@ -54,8 +54,9 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
 
 - [x] **Deliverable 8: Backtesting Framework** (`src/backtest.py`)
   - Temporal holdout split: Weeks 1–10 train / Weeks 11–16 test.
-  - Kaplan-Meier Survival Analysis: **KM Median Detection Week 9 (Main) vs Week 16 (Baseline) — 49.0 days (7.0 weeks earlier)**.
+  - Kaplan-Meier Survival Analysis: **KM Median Detection Week 8.95 / 9 (Main) vs Week 15.18 / 16 (Baseline) — 43.6 to 49.0 days (6.2 to 7.0 weeks earlier)** across full cohort.
   - Rigorous Censoring Audit: Baseline suffers **32.8% right-censoring** (never flags 58 of 177 disengaged students).
+  - Lookahead Leakage Audit: Verified all rolling features strictly trailing ($week \le t$) with default `center=False`.
   - Verified F1 Improvement: **Baseline F1 = 0.374 vs Main Model F1 = 0.902** (ROC-AUC 0.585 vs 0.992).
 
 - [x] **Deliverable 9: Edge & Failure Cases** (`tests/test_edge_cases.py`)
@@ -124,8 +125,10 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - Baseline misses over 91.7% of "Quietly Struggling" students (recall: 8.3%), whereas Main Model catches **85.6%**.
   - On "Signal Gamers", an Assessment-Only model collapses to **41.7% recall**, whereas Full 5-Signal Model achieves **85.4% recall** via `logins_per_active_hour` gaming divergence detection.
 
-### 4. Pending Work and Next Steps
-* **Phase 3 & 4 Verification**:
-  - Run full interactive Streamlit dashboard (`.\run.ps1 run` or `streamlit run dashboard/app.py`) to verify UI sliders, radar charts, and governance shields.
-  - Document final numerical before-and-after table in README.
-  - Verify clean reproducibility from clean checkout.
+### 4. Final Project Sign-Off & Verification Status (100% Complete)
+* **All 14 Project Deliverables**: Implemented, auditable, and linked in `README.md`.
+* **Lookahead Leakage Audit**: Complete line-by-line verification in `docs/error_analysis.md` confirming zero centered windows and strictly trailing aggregations ($week \le t$).
+* **Kaplan-Meier Survival Analysis**: Full trajectory $S(t)$ documented; discrete median advantage is 49.0 days (7.0 weeks), and continuous interpolated crossing advantage is 43.6 days (6.23 weeks).
+* **Automated Tests**: 4/4 edge-case tests passing via `pytest` in 18.6s.
+* **Interactive Dashboard**: Working Streamlit application with live stakeholder trade-off curves, 5-family radar charts, and governance safeguards.
+* **Clean Single-Command Run**: Verified executable via `.\run.ps1` (Windows) and `make` (Linux/macOS).

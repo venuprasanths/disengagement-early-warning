@@ -91,7 +91,7 @@
       "mean_lead_days": -5.7,
       "ci_95_mean_days": [
         -13.4,
-        2.2
+        1.8
       ],
       "iqr_q25_q75_days": [
         -42.0,
@@ -126,9 +126,49 @@
     },
     "kaplan_meier": {
       "km_median_detection_week_main": 9,
+      "km_median_interpolated_week_main": 8.95,
       "km_median_detection_week_baseline": 16,
+      "km_median_interpolated_week_baseline": 15.18,
       "km_lead_time_advantage_weeks": 7,
-      "km_lead_time_advantage_days": 49
+      "km_lead_time_advantage_days": 49,
+      "km_lead_time_interpolated_advantage_weeks": 6.23,
+      "km_lead_time_interpolated_advantage_days": 43.6,
+      "survival_curve_main": {
+        "1": 0.9887,
+        "2": 0.9831,
+        "3": 0.9831,
+        "4": 0.9831,
+        "5": 0.9774,
+        "6": 0.9322,
+        "7": 0.8475,
+        "8": 0.6497,
+        "9": 0.4915,
+        "10": 0.2599,
+        "11": 0.1864,
+        "12": 0.0621,
+        "13": 0.0452,
+        "14": 0.0226,
+        "15": 0.0169,
+        "16": 0.0
+      },
+      "survival_curve_baseline": {
+        "1": 0.8983,
+        "2": 0.8249,
+        "3": 0.7458,
+        "4": 0.7175,
+        "5": 0.6836,
+        "6": 0.6554,
+        "7": 0.6554,
+        "8": 0.6554,
+        "9": 0.6384,
+        "10": 0.5989,
+        "11": 0.5876,
+        "12": 0.5706,
+        "13": 0.5706,
+        "14": 0.5706,
+        "15": 0.5367,
+        "16": 0.3277
+      }
     },
     "timing_relative_to_true_onset": {
       "main_median_days_before_onset": 0.0,
