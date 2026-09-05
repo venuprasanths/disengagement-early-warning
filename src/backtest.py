@@ -128,26 +128,37 @@ def evaluate_lead_time(
             "lead_time_days": diff_weeks * 7,
         })
 
-    lead_arr = np.array(lead_time_weeks)
-    median_weeks = float(np.median(lead_arr))
-    mean_weeks = float(np.mean(lead_arr))
-    median_days = median_weeks * 7.0
-    mean_days = mean_weeks * 7.0
+    lead_arr_w = np.array(lead_time_weeks)
+    lead_arr_d = lead_arr_w * 7.0
 
-    # 95% Confidence interval for mean lead time via bootstrap
-    boot_means = [
-        np.mean(np.random.choice(lead_arr, size=len(lead_arr), replace=True))
-        for _ in range(1000)
+    median_weeks = float(np.median(lead_arr_w))
+    median_days = float(np.median(lead_arr_d))
+    mean_weeks = float(np.mean(lead_arr_w))
+    mean_days = float(np.mean(lead_arr_d))
+
+    # Bootstrap 95% CI of the MEDIAN
+    boot_medians = [
+        np.median(np.random.choice(lead_arr_d, size=len(lead_arr_d), replace=True))
+        for _ in range(2000)
     ]
-    ci_low = float(np.percentile(boot_means, 2.5) * 7.0)
-    ci_high = float(np.percentile(boot_means, 97.5) * 7.0)
+    ci_med_low = float(np.percentile(boot_medians, 2.5))
+    ci_med_high = float(np.percentile(boot_medians, 97.5))
+
+    # Bootstrap 95% CI of the MEAN
+    boot_means = [
+        np.mean(np.random.choice(lead_arr_d, size=len(lead_arr_d), replace=True))
+        for _ in range(2000)
+    ]
+    ci_mean_low = float(np.percentile(boot_means, 2.5))
+    ci_mean_high = float(np.percentile(boot_means, 97.5))
 
     return {
         "disengaged_cohort_size": len(disengaged_students),
         "median_lead_time_weeks": round(median_weeks, 2),
         "median_lead_time_days": round(median_days, 1),
+        "ci_95_median_lead_time_days": [round(ci_med_low, 1), round(ci_med_high, 1)],
         "mean_lead_time_days": round(mean_days, 1),
-        "ci_95_lead_time_days": [round(ci_low, 1), round(ci_high, 1)],
+        "ci_95_mean_lead_time_days": [round(ci_mean_low, 1), round(ci_mean_high, 1)],
         "students_flagged_earlier": earlier_count,
         "students_flagged_tied": tied_count,
         "students_flagged_later": later_count,
@@ -285,9 +296,9 @@ def main():
     print(f"Baseline F1:   {results['baseline_metrics']['f1']} | Recall: {results['baseline_metrics']['recall']} | Precision: {results['baseline_metrics']['precision']}")
     print(f"Main Model F1: {results['main_model_metrics']['f1']} | Recall: {results['main_model_metrics']['recall']} | Precision: {results['main_model_metrics']['precision']}")
     print(f"ROC-AUC: Baseline={results['baseline_metrics']['roc_auc']} vs Main={results['main_model_metrics']['roc_auc']}")
-    print("-" * 50)
     print(f"LEAD TIME ADVANTAGE: Main model flags at-risk students a median of {results['lead_time']['median_lead_time_days']} days ({results['lead_time']['median_lead_time_weeks']} weeks) EARLIER than baseline!")
-    print(f"95% CI Lead Time: [{results['lead_time']['ci_95_lead_time_days'][0]}, {results['lead_time']['ci_95_lead_time_days'][1]}] days")
+    print(f"  • 95% CI of MEDIAN: [{results['lead_time']['ci_95_median_lead_time_days'][0]}, {results['lead_time']['ci_95_median_lead_time_days'][1]}] days")
+    print(f"  • Mean Lead Time  : {results['lead_time']['mean_lead_time_days']} days | 95% CI of MEAN: [{results['lead_time']['ci_95_mean_lead_time_days'][0]}, {results['lead_time']['ci_95_mean_lead_time_days'][1]}] days")
     print("=" * 50)
     print(f"Saved complete results to {args.output}")
 

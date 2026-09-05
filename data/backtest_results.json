@@ -75,10 +75,14 @@
     "disengaged_cohort_size": 177,
     "median_lead_time_weeks": 5.0,
     "median_lead_time_days": 35.0,
+    "ci_95_median_lead_time_days": [
+      21.0,
+      35.0
+    ],
     "mean_lead_time_days": 12.7,
-    "ci_95_lead_time_days": [
+    "ci_95_mean_lead_time_days": [
       6.4,
-      19.0
+      18.9
     ],
     "students_flagged_earlier": 111,
     "students_flagged_tied": 3,
