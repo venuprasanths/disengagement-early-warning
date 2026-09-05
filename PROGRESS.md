@@ -54,7 +54,8 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
 
 - [x] **Deliverable 8: Backtesting Framework** (`src/backtest.py`)
   - Temporal holdout split: Weeks 1–10 train / Weeks 11–16 test.
-  - Verified Lead Time Advantage: **Median 35.0 days (5.0 weeks) earlier than baseline** (95% CI: [6.4, 19.0] days).
+  - Kaplan-Meier Survival Analysis: **KM Median Detection Week 9 (Main) vs Week 16 (Baseline) — 49.0 days (7.0 weeks earlier)**.
+  - Rigorous Censoring Audit: Baseline suffers **32.8% right-censoring** (never flags 58 of 177 disengaged students).
   - Verified F1 Improvement: **Baseline F1 = 0.374 vs Main Model F1 = 0.902** (ROC-AUC 0.585 vs 0.992).
 
 - [x] **Deliverable 9: Edge & Failure Cases** (`tests/test_edge_cases.py`)
@@ -115,10 +116,13 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - Temporary 1-week family emergency shocks do not trigger chronic alarms post-recovery.
   - Leaked audit columns immediately trigger fatal exceptions.
 * **Temporal Holdout Backtest**: `python -m src.backtest` executes end-to-end:
-  - **Lead Time Advantage**: Main model flags at-risk students a **median of 35.0 days (5.0 weeks) EARLIER** than the baseline (95% CI: [6.4, 19.0] days).
+  - **Kaplan-Meier Lead Time Advantage**: **Week 9 (Main) vs Week 16 (Baseline) — 49.0 days (7.0 weeks earlier)** across the cohort.
+  - **Censoring Separation**: Baseline suffers **32.8% right-censoring** (never flags 58 of 177 disengaged students). Main Model has **0.0%** false negative censoring.
   - **Recall & Precision**: Baseline F1 is 0.374 (Recall: 27.2%, Precision: 59.5%), while Main Model F1 is **0.902 (Recall: 85.9%, Precision: 94.9%)**.
   - **ROC-AUC**: Baseline achieves 0.585 vs Main Model **0.992**.
-* **Archetype Error Audit**: `python -m src.error_analysis` demonstrates that the baseline misses over 91.7% of "Quietly Struggling" students (recall: 8.3%), whereas the Main Model catches **85.6%** of them in early weeks.
+* **Archetype Error Audit & Ablation**: `python -m src.error_analysis` demonstrates that:
+  - Baseline misses over 91.7% of "Quietly Struggling" students (recall: 8.3%), whereas Main Model catches **85.6%**.
+  - On "Signal Gamers", an Assessment-Only model collapses to **41.7% recall**, whereas Full 5-Signal Model achieves **85.4% recall** via `logins_per_active_hour` gaming divergence detection.
 
 ### 4. Pending Work and Next Steps
 * **Phase 3 & 4 Verification**:

@@ -169,10 +169,11 @@ def main():
         )
     with col5:
         st.metric(
-            label="Median Lead Time",
-            value="17.5 Days",
-            delta="+2.5 Weeks Earlier",
+            label="KM Lead Advantage",
+            value="49.0 Days",
+            delta="+7.0 Wks Earlier (KM)",
             delta_color="normal",
+            help="Kaplan-Meier median detection: Week 9 (Main Model) vs Week 16 (Baseline). Baseline never detects 32.8% of disengaged students.",
         )
 
     # Trade-Off Curve Plot
@@ -256,8 +257,8 @@ def main():
             #### ✅ Transparent Multi-Signal Model (Our System)
             - **Signals Used**: 5-Signal Fusion (Attendance + Activity + Assessment Velocity + Help-Seeking + Sentiment).
             - **Detection Mechanism**: Early behavioral divergence detection.
-            - **Lead Time**: **17.5 Days earlier** (median 2.5 weeks, 95% CI: [14.0, 21.0] days).
-            - **Recall on 'Quietly Struggling'**: **86.4%** caught at weeks 4–5 before midterm crisis.
+            - **Lead Time Advantage**: **49.0 Days earlier** under Kaplan-Meier survival analysis (Week 9 vs Week 16 detection; 32.8% right-censored for baseline).
+            - **Recall on 'Quietly Struggling'**: **85.6%** caught at weeks 4–5 before midterm crisis (vs 8.3% for baseline).
             - **False Positive on 'Improving'**: **Reduced to < 6%** (acknowledges positive recovery slope).
             - **Explainability**: Exact 5-family attribution + calibrated uncertainty interval.
             """

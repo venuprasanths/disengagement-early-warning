@@ -73,112 +73,67 @@
   },
   "lead_time": {
     "disengaged_cohort_size": 177,
-    "median_lead_time_weeks": 5.0,
-    "median_lead_time_days": 35.0,
-    "ci_95_median_lead_time_days": [
-      21.0,
-      35.0
-    ],
-    "mean_lead_time_days": 12.7,
-    "ci_95_mean_lead_time_days": [
-      6.4,
-      18.9
-    ],
-    "students_flagged_earlier": 111,
-    "students_flagged_tied": 3,
-    "students_flagged_later": 63,
-    "sample_details": [
-      {
-        "student_id": "STU_0251",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 10,
-        "first_main_flag_week": 9,
-        "first_baseline_flag_week": 16,
-        "lead_time_weeks": 7,
-        "lead_time_days": 49
-      },
-      {
-        "student_id": "STU_0252",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 9,
-        "first_main_flag_week": 9,
-        "first_baseline_flag_week": 16,
-        "lead_time_weeks": 7,
-        "lead_time_days": 49
-      },
-      {
-        "student_id": "STU_0253",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 8,
-        "first_main_flag_week": 8,
-        "first_baseline_flag_week": null,
-        "lead_time_weeks": 9,
-        "lead_time_days": 63
-      },
-      {
-        "student_id": "STU_0254",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 9,
-        "first_main_flag_week": 9,
-        "first_baseline_flag_week": 16,
-        "lead_time_weeks": 7,
-        "lead_time_days": 49
-      },
-      {
-        "student_id": "STU_0255",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 15,
-        "first_main_flag_week": 12,
-        "first_baseline_flag_week": 16,
-        "lead_time_weeks": 4,
-        "lead_time_days": 28
-      },
-      {
-        "student_id": "STU_0256",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 13,
-        "first_main_flag_week": 14,
-        "first_baseline_flag_week": null,
-        "lead_time_weeks": 3,
-        "lead_time_days": 21
-      },
-      {
-        "student_id": "STU_0257",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 10,
-        "first_main_flag_week": 10,
-        "first_baseline_flag_week": null,
-        "lead_time_weeks": 7,
-        "lead_time_days": 49
-      },
-      {
-        "student_id": "STU_0258",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 9,
-        "first_main_flag_week": 10,
-        "first_baseline_flag_week": null,
-        "lead_time_weeks": 7,
-        "lead_time_days": 49
-      },
-      {
-        "student_id": "STU_0259",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 12,
-        "first_main_flag_week": 12,
-        "first_baseline_flag_week": null,
-        "lead_time_weeks": 5,
-        "lead_time_days": 35
-      },
-      {
-        "student_id": "STU_0260",
-        "archetype": "quietly_struggling",
-        "first_true_disengaged_week": 11,
-        "first_main_flag_week": 10,
-        "first_baseline_flag_week": 16,
-        "lead_time_weeks": 6,
-        "lead_time_days": 42
+    "population_breakdown": {
+      "both_flagged_count": 119,
+      "both_flagged_pct": 67.2,
+      "baseline_never_flagged_count": 58,
+      "baseline_never_flagged_pct": 32.8,
+      "main_never_flagged_count": 0,
+      "main_never_flagged_pct": 0.0
+    },
+    "uncensored_lead_time_pop_a": {
+      "median_lead_days": -14.0,
+      "median_lead_weeks": -2.0,
+      "ci_95_median_days": [
+        -28.0,
+        14.0
+      ],
+      "mean_lead_days": -5.7,
+      "ci_95_mean_days": [
+        -13.4,
+        2.2
+      ],
+      "iqr_q25_q75_days": [
+        -42.0,
+        35.0
+      ],
+      "lead_time_histogram_weeks": {
+        "-14": 1,
+        "-13": 2,
+        "-12": 1,
+        "-11": 2,
+        "-10": 4,
+        "-9": 1,
+        "-7": 10,
+        "-6": 15,
+        "-5": 7,
+        "-4": 7,
+        "-3": 5,
+        "-2": 6,
+        "-1": 2,
+        "0": 3,
+        "1": 3,
+        "2": 3,
+        "3": 5,
+        "4": 8,
+        "5": 6,
+        "6": 13,
+        "7": 9,
+        "8": 4,
+        "9": 1,
+        "10": 1
       }
-    ]
+    },
+    "kaplan_meier": {
+      "km_median_detection_week_main": 9,
+      "km_median_detection_week_baseline": 16,
+      "km_lead_time_advantage_weeks": 7,
+      "km_lead_time_advantage_days": 49
+    },
+    "timing_relative_to_true_onset": {
+      "main_median_days_before_onset": 0.0,
+      "base_median_days_before_onset": 14.0
+    }
   },
   "trade_off_curve": [
     {
