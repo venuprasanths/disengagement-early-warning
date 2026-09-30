@@ -1,0 +1,334 @@
+{
+  "reference_balanced": {
+    "scenario_key": "reference_balanced",
+    "name": "Standard Reference (Balanced)",
+    "description": "Standard population distribution (50% engaged, 20% quiet struggle, 15% checked out, 10% improving, 5% edge cases).",
+    "cohort_size": 500,
+    "test_observations": 3000,
+    "disengagement_base_rate": 0.321,
+    "main_model": {
+      "f1": 0.9021,
+      "recall": 0.8576,
+      "precision": 0.9516,
+      "false_alarm_rate": 0.0206,
+      "roc_auc": 0.9919,
+      "brier_score": 0.0581
+    },
+    "baseline_model": {
+      "f1": 0.3738,
+      "recall": 0.2723,
+      "precision": 0.5955,
+      "false_alarm_rate": 0.0873,
+      "roc_auc": 0.5855,
+      "brier_score": 0.3039
+    },
+    "relative_f1_gain": 141.4,
+    "archetype_breakdown": {
+      "acute_shock": {
+        "count_observations": 42,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.095
+      },
+      "checked_out": {
+        "count_observations": 450,
+        "disengaged_count": 346,
+        "main_recall": 0.876,
+        "baseline_recall": 0.491,
+        "main_false_alarm_rate": 0.288,
+        "baseline_false_alarm_rate": 0.317
+      },
+      "consistently_engaged": {
+        "count_observations": 1500,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.088
+      },
+      "genuinely_improving": {
+        "count_observations": 300,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "quietly_struggling": {
+        "count_observations": 600,
+        "disengaged_count": 568,
+        "main_recall": 0.849,
+        "baseline_recall": 0.083,
+        "main_false_alarm_rate": 0.375,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "signal_gamer": {
+        "count_observations": 48,
+        "disengaged_count": 48,
+        "main_recall": 0.833,
+        "baseline_recall": 0.938,
+        "main_false_alarm_rate": "N/A",
+        "baseline_false_alarm_rate": "N/A"
+      },
+      "transfer_student": {
+        "count_observations": 60,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.15
+      }
+    }
+  },
+  "high_acute_shock": {
+    "scenario_key": "high_acute_shock",
+    "name": "High Acute-Shock (Crisis Surge)",
+    "description": "Simulates a community crisis or health surge where 20% of the cohort experiences sudden temporary distress.",
+    "cohort_size": 500,
+    "test_observations": 3000,
+    "disengagement_base_rate": 0.267,
+    "main_model": {
+      "f1": 0.9256,
+      "recall": 0.8938,
+      "precision": 0.9597,
+      "false_alarm_rate": 0.0136,
+      "roc_auc": 0.9961,
+      "brier_score": 0.0415
+    },
+    "baseline_model": {
+      "f1": 0.3849,
+      "recall": 0.2938,
+      "precision": 0.5582,
+      "false_alarm_rate": 0.0845,
+      "roc_auc": 0.5986,
+      "brier_score": 0.25
+    },
+    "relative_f1_gain": 140.5,
+    "archetype_breakdown": {
+      "acute_shock": {
+        "count_observations": 600,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.095
+      },
+      "checked_out": {
+        "count_observations": 360,
+        "disengaged_count": 289,
+        "main_recall": 0.834,
+        "baseline_recall": 0.491,
+        "main_false_alarm_rate": 0.239,
+        "baseline_false_alarm_rate": 0.183
+      },
+      "consistently_engaged": {
+        "count_observations": 1200,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.087
+      },
+      "genuinely_improving": {
+        "count_observations": 240,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "quietly_struggling": {
+        "count_observations": 480,
+        "disengaged_count": 452,
+        "main_recall": 0.92,
+        "baseline_recall": 0.088,
+        "main_false_alarm_rate": 0.464,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "signal_gamer": {
+        "count_observations": 60,
+        "disengaged_count": 59,
+        "main_recall": 0.983,
+        "baseline_recall": 0.898,
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 1.0
+      },
+      "transfer_student": {
+        "count_observations": 60,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.183
+      }
+    }
+  },
+  "high_chronic_quiet_struggle": {
+    "scenario_key": "high_chronic_quiet_struggle",
+    "name": "High Chronic Quiet-Struggle (STEM/Magnet)",
+    "description": "Simulates a high-pressure magnet school where 44% of students quietly struggle while maintaining near-perfect attendance.",
+    "cohort_size": 500,
+    "test_observations": 3000,
+    "disengagement_base_rate": 0.523,
+    "main_model": {
+      "f1": 0.9416,
+      "recall": 0.9209,
+      "precision": 0.9633,
+      "false_alarm_rate": 0.0384,
+      "roc_auc": 0.9921,
+      "brier_score": 0.0595
+    },
+    "baseline_model": {
+      "f1": 0.3081,
+      "recall": 0.1945,
+      "precision": 0.7403,
+      "false_alarm_rate": 0.0747,
+      "roc_auc": 0.5559,
+      "brier_score": 0.5001
+    },
+    "relative_f1_gain": 205.6,
+    "archetype_breakdown": {
+      "acute_shock": {
+        "count_observations": 60,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.067
+      },
+      "checked_out": {
+        "count_observations": 300,
+        "disengaged_count": 236,
+        "main_recall": 0.831,
+        "baseline_recall": 0.475,
+        "main_false_alarm_rate": 0.359,
+        "baseline_false_alarm_rate": 0.219
+      },
+      "consistently_engaged": {
+        "count_observations": 900,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.082
+      },
+      "genuinely_improving": {
+        "count_observations": 240,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "quietly_struggling": {
+        "count_observations": 1320,
+        "disengaged_count": 1244,
+        "main_recall": 0.933,
+        "baseline_recall": 0.091,
+        "main_false_alarm_rate": 0.395,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "signal_gamer": {
+        "count_observations": 90,
+        "disengaged_count": 88,
+        "main_recall": 0.989,
+        "baseline_recall": 0.909,
+        "main_false_alarm_rate": 1.0,
+        "baseline_false_alarm_rate": 0.5
+      },
+      "transfer_student": {
+        "count_observations": 90,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.156
+      }
+    }
+  },
+  "mixed_worst_case": {
+    "scenario_key": "mixed_worst_case",
+    "name": "Mixed Worst-Case (Stressed/Under-Resourced)",
+    "description": "Compound disruption: high quiet struggle (30%), checked out (24%), and acute shocks (12%) in an under-resourced environment.",
+    "cohort_size": 500,
+    "test_observations": 3000,
+    "disengagement_base_rate": 0.506,
+    "main_model": {
+      "f1": 0.9283,
+      "recall": 0.8986,
+      "precision": 0.9599,
+      "false_alarm_rate": 0.0385,
+      "roc_auc": 0.9888,
+      "brier_score": 0.0519
+    },
+    "baseline_model": {
+      "f1": 0.4382,
+      "recall": 0.3035,
+      "precision": 0.788,
+      "false_alarm_rate": 0.0837,
+      "roc_auc": 0.6037,
+      "brier_score": 0.4666
+    },
+    "relative_f1_gain": 111.8,
+    "archetype_breakdown": {
+      "acute_shock": {
+        "count_observations": 360,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.075
+      },
+      "checked_out": {
+        "count_observations": 720,
+        "disengaged_count": 554,
+        "main_recall": 0.863,
+        "baseline_recall": 0.491,
+        "main_false_alarm_rate": 0.247,
+        "baseline_false_alarm_rate": 0.187
+      },
+      "consistently_engaged": {
+        "count_observations": 600,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.077
+      },
+      "genuinely_improving": {
+        "count_observations": 180,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.0
+      },
+      "quietly_struggling": {
+        "count_observations": 900,
+        "disengaged_count": 846,
+        "main_recall": 0.909,
+        "baseline_recall": 0.092,
+        "main_false_alarm_rate": 0.296,
+        "baseline_false_alarm_rate": 0.019
+      },
+      "signal_gamer": {
+        "count_observations": 120,
+        "disengaged_count": 119,
+        "main_recall": 0.992,
+        "baseline_recall": 0.933,
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 1.0
+      },
+      "transfer_student": {
+        "count_observations": 120,
+        "disengaged_count": 0,
+        "main_recall": "N/A",
+        "baseline_recall": "N/A",
+        "main_false_alarm_rate": 0.0,
+        "baseline_false_alarm_rate": 0.15
+      }
+    }
+  }
+}
