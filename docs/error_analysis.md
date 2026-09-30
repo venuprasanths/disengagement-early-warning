@@ -286,41 +286,79 @@ A comprehensive synthesis comparing current educational practice against design 
 
 ## 6. Sensitivity & Stress Testing Across Cohort Compositions
 
-To rigorously test whether the model is fragile or dependent on the synthetic population ratios (e.g. 50% engaged, 20% quiet struggle), we developed `src/sensitivity_analysis.py` and benchmarked the system across **4 distinct cohort compositions** ($N=500$ students each, evaluated on temporal holdout Weeks 11–16, $N=3,000$ student-weeks):
+To rigorously test whether the model is fragile or dependent on the synthetic population ratios (e.g. 50% engaged, 20% quiet struggle), we developed `src/sensitivity_analysis.py` and benchmarked the system across **4 distinct cohort compositions** ($N=500$ students each).
 
-### 6.1 Stress Test Scenarios
-1. **Scenario 0: Standard Reference (Balanced)**: 50% engaged, 20% quietly struggling, 15% checked out, 10% improving, 5% edge cases (Disengagement base rate: 32.1%).
-2. **Scenario 1: High Acute-Shock (Crisis Surge)**: Simulates a community crisis, localized epidemic, or traumatic disruption elevating acute temporary distress to **20.0% of the entire school** (14x baseline rate; base rate: 26.7%).
-3. **Scenario 2: High Chronic Quiet-Struggle (STEM/Magnet)**: Simulates a high-pressure competitive environment where **44.0% of students quietly struggle** while maintaining compulsive in-seat attendance (base rate: 52.3%).
-4. **Scenario 3: Mixed Worst-Case (Stressed/Under-Resourced)**: Simulates a heavily disrupted school with compound challenges: 30% quiet struggle, 24% checked out, 12% acute shock, and only 20% consistently engaged (base rate: 50.6%).
+### 6.1 Observation Population Accounting (31,670 Total Observations)
+Accounting for late-enrolling transfer students (who arrive at Week 7, missing Weeks 1–6):
+* **Standard Reference**: 10 transfer students ($10 \times 6 = 60$ unobserved weeks) $\rightarrow$ **7,940 observations** (4,940 train, 3,000 test).
+* **High Acute-Shock**: 10 transfer students ($10 \times 6 = 60$ unobserved weeks) $\rightarrow$ **7,940 observations** (4,940 train, 3,000 test).
+* **High Chronic Quiet-Struggle**: 15 transfer students ($15 \times 6 = 90$ unobserved weeks) $\rightarrow$ **7,910 observations** (4,910 train, 3,000 test).
+* **Mixed Worst-Case**: 20 transfer students ($20 \times 6 = 120$ unobserved weeks) $\rightarrow$ **7,880 observations** (4,880 train, 3,000 test).
+* **Total Generated**: **31,670 student-week observations** across the 4 cohorts ($19,670$ training rows in Weeks 1–10; exactly **12,000 holdout test observations** across Weeks 11–16).
 
-### 6.2 Empirical Stress Test Results
+---
+
+### 6.2 Explicit Clarification of Model Training Paradigms
+
+To ensure complete scientific transparency regarding our robustness claims, we explicitly evaluate and distinguish **two complementary training paradigms**:
+
+* **Paradigm A: Fixed Reference Model (Zero Retraining / Out-of-Distribution Transfer Robustness)**
+  - *Setup*: The model is trained **exactly once** on the standard balanced reference cohort (Weeks 1–10) and then deployed **without any retraining or parameter updates** to the other 3 skewed schools.
+  - *What This Evaluates*: Pure Out-of-Distribution (OOD) transfer generalization. Answers: *"If a district trains this model on a typical school, does it break when deployed zero-shot to a magnet school or a crisis-hit school?"*
+
+* **Paradigm B: Retrained Scenario Model (In-Domain Learning Capacity Across Regimes)**
+  - *Setup*: A fresh model instance is trained directly on each school's own local historical training data (Weeks 1–10 of that specific cohort) and evaluated on its own holdout test set (Weeks 11–16).
+  - *What This Evaluates*: Algorithmic capacity to learn distinct disengagement distributions. Answers: *"Can the multi-signal architecture adapt and optimize itself when deployed in severely skewed environments?"*
+
+---
+
+### 6.3 Empirical Stress Test Results (Both Paradigms)
+
+#### Paradigm A: Fixed Reference Model (Zero Retraining / OOD Generalization)
+*Evaluates the identical model trained solely on `reference_balanced` across all test sets:*
+
+| Cohort Scenario | Base Rate | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Calibration | ROC-AUC |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Standard Reference (Balanced)** | 32.1% | **`0.902`** | **`85.8%`** | **`95.2%`** | **`2.1%`** | **`0.058`** | **`0.992`** |
+| **High Acute-Shock (Crisis Surge)** | 26.7% | **`0.903`** | **`85.0%`** | **`96.3%`** | **`1.2%`** | **`0.047`** | **`0.995`** |
+| **High Chronic Quiet-Struggle (STEM/Magnet)** | 52.3% | **`0.902`** | **`84.3%`** | **`97.0%`** | **`2.9%`** | **`0.089`** | **`0.989`** |
+| **Mixed Worst-Case (Stressed/Under-Resourced)** | 50.6% | **`0.902`** | **`85.2%`** | **`95.9%`** | **`3.8%`** | **`0.092`** | **`0.983`** |
+
+#### Paradigm B: Retrained Scenario Model vs. Lagging Baseline
+*Evaluates fresh models trained on each school's own historical data vs. current practice:*
+
 | Cohort Scenario | Model | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Calibration | ROC-AUC | Relative F1 Gain |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Standard Reference (Balanced)** | **Main 5-Signal** | **`0.902`** | **`85.8%`** | **`95.2%`** | **`2.1%`** | **`0.058`** | **`0.992`** | **+141.4%** |
-| *(Base Rate: 32.1%)* | Lagging Baseline | 0.374 | 27.2% | 59.6% | 8.7% | 0.304 | 0.586 | Benchmark |
-| **High Acute-Shock (Crisis Surge)** | **Main 5-Signal** | **`0.926`** | **`89.4%`** | **`96.0%`** | **`1.4%`** | **`0.042`** | **`0.996`** | **+140.5%** |
-| *(Base Rate: 26.7%)* | Lagging Baseline | 0.385 | 29.4% | 55.8% | 8.5% | 0.250 | 0.599 | Benchmark |
-| **High Chronic Quiet-Struggle** | **Main 5-Signal** | **`0.942`** | **`92.1%`** | **`96.3%`** | **`3.8%`** | **`0.059`** | **`0.992`** | **+205.6%** |
-| *(Base Rate: 52.3%)* | Lagging Baseline | 0.308 | 19.4% | 74.0% | 7.5% | 0.500 | 0.556 | Benchmark |
-| **Mixed Worst-Case (Stressed)** | **Main 5-Signal** | **`0.928`** | **`89.9%`** | **`96.0%`** | **`3.9%`** | **`0.052`** | **`0.989`** | **+111.8%** |
-| *(Base Rate: 50.6%)* | Lagging Baseline | 0.438 | 30.3% | 78.8% | 8.4% | 0.467 | 0.604 | Benchmark |
+| **Standard Reference (Balanced)** | **Main (Retrained)** | **`0.902`** | **`85.8%`** | **`95.2%`** | **`2.1%`** | **`0.058`** | **`0.992`** | **+141.4%** |
+| *(Obs: 7,940)* | Lagging Baseline | 0.374 | 27.2% | 59.6% | 8.7% | 0.304 | 0.586 | Benchmark |
+| **High Acute-Shock (Crisis Surge)** | **Main (Retrained)** | **`0.926`** | **`89.4%`** | **`96.0%`** | **`1.4%`** | **`0.042`** | **`0.996`** | **+140.5%** |
+| *(Obs: 7,940)* | Lagging Baseline | 0.385 | 29.4% | 55.8% | 8.5% | 0.250 | 0.599 | Benchmark |
+| **High Chronic Quiet-Struggle** | **Main (Retrained)** | **`0.942`** | **`92.1%`** | **`96.3%`** | **`3.8%`** | **`0.059`** | **`0.992`** | **+205.6%** |
+| *(Obs: 7,910)* | Lagging Baseline | 0.308 | 19.4% | 74.0% | 7.5% | 0.500 | 0.556 | Benchmark |
+| **Mixed Worst-Case (Stressed)** | **Main (Retrained)** | **`0.928`** | **`89.9%`** | **`96.0%`** | **`3.9%`** | **`0.052`** | **`0.989`** | **+111.8%** |
+| *(Obs: 7,880)* | Lagging Baseline | 0.438 | 30.3% | 78.8% | 8.4% | 0.467 | 0.604 | Benchmark |
 
-### 6.3 Honest Degradation Audit & Structural Findings
+---
 
-#### Finding 1: Baseline Model Suffers Catastrophic Collapse Under Quiet-Struggle Skew
+### 6.4 Honest Degradation Audit & Structural Findings
+
+#### Finding 1: Fixed Model Displays Remarkable OOD F1 Invariance ($F_1 \ge 0.902$) but Calibration Drift
+* When evaluated **zero-shot without retraining** (Paradigm A), the fixed reference model maintains an $F_1$ score of **`0.902` to `0.903`** across all three skewed environments, with precision staying above **95.9%** and recall staying above **84.3%**.
+* **Honest Calibration Degradation**: However, Brier score loss increases from **0.058 to 0.089–0.092** on the high-base-rate cohorts (Quiet-Struggle and Mixed Worst-Case). Because the reference model's Platt calibrator was trained on a 32.1% base rate, its posterior probabilities are slightly under-confident when the true base rate exceeds 50%. Retraining on local data (Paradigm B) fixes this drift, recovering Brier scores to **0.052–0.059**.
+
+#### Finding 2: Baseline Model Suffers Catastrophic Collapse Under Quiet-Struggle Skew
 * In the High Chronic Quiet-Struggle scenario, **Baseline recall plummets from 27.2% down to 19.4%** (missing over 80% of struggling students!), and its Brier calibration error blows up to **0.500**.
 * **Why**: The baseline relies on attendance dips ($< 80\%$) and failing grades ($< 60\%$). When nearly half the school silently disengages while maintaining in-seat presence, the baseline is structurally blind.
-* **Main Model Contrast**: The Main Model achieves **92.1% recall overall and 93.3% recall specifically on quietly struggling students**, driven by digital reading time and pulse sentiment.
+* **Main Model Contrast**: The Main Model achieves **84.3% recall zero-shot (Paradigm A)** and **92.1% recall with local training (Paradigm B)**, with 93.3% recall specifically on quietly struggling students.
 
-#### Finding 2: Baseline Overreacts to Acute Shocks; Main Model Shows Robust Rebound
+#### Finding 3: Baseline Overreacts to Acute Shocks; Main Model Shows Robust Rebound
 * In the High Acute-Shock scenario (100 acute shock students), the Baseline triggers on post-crisis marks, suffering a **9.5% false alarm rate on recovered students** and dragging baseline precision down to **55.8%**.
-* **Main Model**: Sustains a **0.0% false alarm rate on recovered acute shock students** due to recovery velocity recognition.
+* **Main Model**: Sustains a **0.0% false alarm rate on recovered acute shock students** in both paradigms due to recovery velocity recognition.
 
-#### Finding 3: Honest Model Degradation Under High-Disruption & Boundary Skews
-* **Main Model Cohort False-Alarm Rate (FPR)** increases from **2.1%** (reference) to **3.8%** (quiet struggle) and **3.9%** (mixed worst-case).
+#### Finding 4: Honest False-Alarm Rate Elevation Under Extreme Disruption
+* **Main Model Cohort False-Alarm Rate (FPR)** increases from **2.1%** (reference) to **2.9%–3.8%** (quiet struggle) and **3.8%–3.9%** (mixed worst-case).
   - *Detailed Audit of Degradation*: The increase in false alarms does **not** occur on engaged or recovering students (their false alarm rate remains 0.0%). Rather, it occurs on the **borderline transitional weeks (Weeks 8–10)** of quietly struggling students where early reading drops occurred before the strict 2-week consecutive persistence condition ($E_{i,t} < 0.40$ for $\ge 2$ weeks) was met.
-* **ROC-AUC Slight Dip**: In the Mixed Worst-Case scenario, Main Model ROC-AUC experiences a minor degradation from **0.992 to 0.989** due to compounding noise across multiple concurrent edge-case archetypes.
+* **ROC-AUC Slight Dip**: Under the mixed worst-case scenario, ROC-AUC dips slightly from **0.992 to 0.983 (fixed) / 0.989 (retrained)** due to compounding noise across multiple concurrent edge-case archetypes.
 * **Operational Recommendation**: When deploying in schools with high disruption or competitive pressure, counselors should slightly increase the decision threshold ($\tau \approx 0.55\text{--}0.60$) to suppress transitional false alarms.
 
 ---

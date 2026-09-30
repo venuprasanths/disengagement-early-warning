@@ -4,9 +4,19 @@
     "name": "Standard Reference (Balanced)",
     "description": "Standard population distribution (50% engaged, 20% quiet struggle, 15% checked out, 10% improving, 5% edge cases).",
     "cohort_size": 500,
+    "total_observations_generated": 7940,
+    "train_observations": 4940,
     "test_observations": 3000,
     "disengagement_base_rate": 0.321,
-    "main_model": {
+    "main_model_retrained": {
+      "f1": 0.9021,
+      "recall": 0.8576,
+      "precision": 0.9516,
+      "false_alarm_rate": 0.0206,
+      "roc_auc": 0.9919,
+      "brier_score": 0.0581
+    },
+    "main_model_fixed_ood": {
       "f1": 0.9021,
       "recall": 0.8576,
       "precision": 0.9516,
@@ -87,15 +97,25 @@
     "name": "High Acute-Shock (Crisis Surge)",
     "description": "Simulates a community crisis or health surge where 20% of the cohort experiences sudden temporary distress.",
     "cohort_size": 500,
+    "total_observations_generated": 7940,
+    "train_observations": 4940,
     "test_observations": 3000,
     "disengagement_base_rate": 0.267,
-    "main_model": {
+    "main_model_retrained": {
       "f1": 0.9256,
       "recall": 0.8938,
       "precision": 0.9597,
       "false_alarm_rate": 0.0136,
       "roc_auc": 0.9961,
       "brier_score": 0.0415
+    },
+    "main_model_fixed_ood": {
+      "f1": 0.9031,
+      "recall": 0.85,
+      "precision": 0.9632,
+      "false_alarm_rate": 0.0118,
+      "roc_auc": 0.9948,
+      "brier_score": 0.0474
     },
     "baseline_model": {
       "f1": 0.3849,
@@ -170,15 +190,25 @@
     "name": "High Chronic Quiet-Struggle (STEM/Magnet)",
     "description": "Simulates a high-pressure magnet school where 44% of students quietly struggle while maintaining near-perfect attendance.",
     "cohort_size": 500,
+    "total_observations_generated": 7910,
+    "train_observations": 4910,
     "test_observations": 3000,
     "disengagement_base_rate": 0.523,
-    "main_model": {
+    "main_model_retrained": {
       "f1": 0.9416,
       "recall": 0.9209,
       "precision": 0.9633,
       "false_alarm_rate": 0.0384,
       "roc_auc": 0.9921,
       "brier_score": 0.0595
+    },
+    "main_model_fixed_ood": {
+      "f1": 0.9021,
+      "recall": 0.8431,
+      "precision": 0.9699,
+      "false_alarm_rate": 0.0286,
+      "roc_auc": 0.9893,
+      "brier_score": 0.089
     },
     "baseline_model": {
       "f1": 0.3081,
@@ -253,15 +283,25 @@
     "name": "Mixed Worst-Case (Stressed/Under-Resourced)",
     "description": "Compound disruption: high quiet struggle (30%), checked out (24%), and acute shocks (12%) in an under-resourced environment.",
     "cohort_size": 500,
+    "total_observations_generated": 7880,
+    "train_observations": 4880,
     "test_observations": 3000,
     "disengagement_base_rate": 0.506,
-    "main_model": {
+    "main_model_retrained": {
       "f1": 0.9283,
       "recall": 0.8986,
       "precision": 0.9599,
       "false_alarm_rate": 0.0385,
       "roc_auc": 0.9888,
       "brier_score": 0.0519
+    },
+    "main_model_fixed_ood": {
+      "f1": 0.9021,
+      "recall": 0.8519,
+      "precision": 0.9585,
+      "false_alarm_rate": 0.0378,
+      "roc_auc": 0.9834,
+      "brier_score": 0.0918
     },
     "baseline_model": {
       "f1": 0.4382,

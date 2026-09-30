@@ -8,12 +8,11 @@ at least 3 realistic skewed cohort distributions:
 3. High Chronic Quiet-Struggle Cohort: Rigorous magnet school setting (44% quiet struggle, 10% checked out).
 4. Mixed Worst-Case Cohort: Under-resourced, highly disrupted school (30% quiet struggle, 24% checked out, 12% acute shock).
 
-Evaluates:
-- F1 Score shifts
-- Recall (Counselor Sensitivity) shifts
-- Precision (Student/Parent Protection) shifts
-- False Alarm Rate (False Positive Rate: FP / (FP + TN)) shifts
-- Archetype-specific failure mode shifts (e.g. Acute Shock False Alarm Rate, Quietly Struggling Recall)
+Explicitly evaluates and compares TWO distinct robustness paradigms:
+- Paradigm A: Fixed Reference Model (Zero Retraining / Out-of-Distribution Transfer Robustness)
+  Trained ONCE on the reference balanced cohort and evaluated directly on skewed test sets.
+- Paradigm B: Retrained Scenario Model (In-Domain Learning Capacity)
+  Retrained on the local school's own Weeks 1–10 historical training distribution.
 """
 
 import os
@@ -93,10 +92,12 @@ def evaluate_cohort_scenario(
     train_end_week: int = 10,
     test_start_week: int = 11,
     threshold: float = 0.50,
+    fixed_model: Optional[TransparentMultiSignalModel] = None,
 ) -> Dict[str, Any]:
     """
-    Generates a cohort under specified archetype distribution, trains both models
-    on Weeks 1–10, and evaluates holdout performance on Weeks 11–16.
+    Generates a cohort under specified archetype distribution, evaluates both
+    the Retrained Scenario Model and (if provided) the Fixed Reference Model against
+    the holdout test set (Weeks 11–16).
     """
     archetype_counts = scenario_cfg["archetype_counts"]
     df = generate_cohort(seed=seed, archetype_counts=archetype_counts)
@@ -107,44 +108,59 @@ def evaluate_cohort_scenario(
 
     X_train, y_train, _ = prepare_feature_matrix(df_train)
     X_test, y_test, audit_test = prepare_feature_matrix(df_test)
+    y_test_arr = y_test.to_numpy()
 
-    # Train Baseline & Main Model
+    # Train Baseline
     baseline = LaggingAttendanceMarksBaseline()
-    main_model = TransparentMultiSignalModel(random_state=seed)
-    main_model.fit(X_train, y_train)
-
-    # Predictions on holdout test set
     base_preds = baseline.predict(df_test)
     base_risk = baseline.predict_risk_score(df_test)
 
-    main_risk = main_model.predict_risk_score(X_test)
-    main_preds = main_risk >= threshold
-
-    y_test_arr = y_test.to_numpy()
-
-    # Overall Metrics: Main Model
-    main_rec = float(recall_score(y_test_arr, main_preds, zero_division=0))
-    main_prec = float(precision_score(y_test_arr, main_preds, zero_division=0))
-    main_f1 = float(f1_score(y_test_arr, main_preds, zero_division=0))
-    main_auc = float(roc_auc_score(y_test_arr, main_risk))
-    main_brier = float(brier_score_loss(y_test_arr, main_risk))
-
-    # Overall Metrics: Baseline
     base_rec = float(recall_score(y_test_arr, base_preds, zero_division=0))
     base_prec = float(precision_score(y_test_arr, base_preds, zero_division=0))
     base_f1 = float(f1_score(y_test_arr, base_preds, zero_division=0))
     base_auc = float(roc_auc_score(y_test_arr, base_risk))
     base_brier = float(brier_score_loss(y_test_arr, base_risk))
-
-    # False-Alarm Rate on Negatives: FP / (FP + TN)
     neg_mask = y_test_arr == 0
-    main_fpr = float(np.mean(main_preds[neg_mask])) if np.sum(neg_mask) > 0 else 0.0
     base_fpr = float(np.mean(base_preds[neg_mask])) if np.sum(neg_mask) > 0 else 0.0
 
-    # Archetype breakdown
+    # Paradigm B: Retrained Scenario Model (fits local distribution)
+    retrained_model = TransparentMultiSignalModel(random_state=seed)
+    retrained_model.fit(X_train, y_train)
+    retrained_risk = retrained_model.predict_risk_score(X_test)
+    retrained_preds = retrained_risk >= threshold
+
+    retrained_rec = float(recall_score(y_test_arr, retrained_preds, zero_division=0))
+    retrained_prec = float(precision_score(y_test_arr, retrained_preds, zero_division=0))
+    retrained_f1 = float(f1_score(y_test_arr, retrained_preds, zero_division=0))
+    retrained_auc = float(roc_auc_score(y_test_arr, retrained_risk))
+    retrained_brier = float(brier_score_loss(y_test_arr, retrained_risk))
+    retrained_fpr = float(np.mean(retrained_preds[neg_mask])) if np.sum(neg_mask) > 0 else 0.0
+
+    # Paradigm A: Fixed Reference Model (Zero Retraining / OOD Generalization)
+    fixed_metrics = None
+    if fixed_model is not None:
+        fixed_risk = fixed_model.predict_risk_score(X_test)
+        fixed_preds = fixed_risk >= threshold
+        fixed_rec = float(recall_score(y_test_arr, fixed_preds, zero_division=0))
+        fixed_prec = float(precision_score(y_test_arr, fixed_preds, zero_division=0))
+        fixed_f1 = float(f1_score(y_test_arr, fixed_preds, zero_division=0))
+        fixed_auc = float(roc_auc_score(y_test_arr, fixed_risk))
+        fixed_brier = float(brier_score_loss(y_test_arr, fixed_risk))
+        fixed_fpr = float(np.mean(fixed_preds[neg_mask])) if np.sum(neg_mask) > 0 else 0.0
+
+        fixed_metrics = {
+            "f1": round(fixed_f1, 4),
+            "recall": round(fixed_rec, 4),
+            "precision": round(fixed_prec, 4),
+            "false_alarm_rate": round(fixed_fpr, 4),
+            "roc_auc": round(fixed_auc, 4),
+            "brier_score": round(fixed_brier, 4),
+        }
+
+    # Archetype breakdown (measured on retrained model)
     eval_df = audit_test.copy()
     eval_df["y_true"] = y_test_arr
-    eval_df["main_pred"] = main_preds
+    eval_df["main_pred"] = retrained_preds
     eval_df["base_pred"] = base_preds
 
     arch_breakdown = {}
@@ -156,11 +172,8 @@ def evaluate_cohort_scenario(
         n_pos = int(np.sum(y_arch == 1))
         n_neg = int(np.sum(y_arch == 0))
 
-        # Recall (if positives exist)
         m_rec = float(np.sum(m_pred[y_arch == 1]) / n_pos) if n_pos > 0 else None
         b_rec = float(np.sum(b_pred[y_arch == 1]) / n_pos) if n_pos > 0 else None
-
-        # False alarm rate (if negatives exist)
         m_fa = float(np.sum(m_pred[y_arch == 0]) / n_neg) if n_neg > 0 else None
         b_fa = float(np.sum(b_pred[y_arch == 0]) / n_neg) if n_neg > 0 else None
 
@@ -178,16 +191,27 @@ def evaluate_cohort_scenario(
         "name": scenario_cfg["name"],
         "description": scenario_cfg["description"],
         "cohort_size": len(df["student_id"].unique()),
+        "total_observations_generated": len(df),
+        "train_observations": len(df_train),
         "test_observations": len(df_test),
         "disengagement_base_rate": round(float(np.mean(y_test_arr)), 3),
         "main_model": {
-            "f1": round(main_f1, 4),
-            "recall": round(main_rec, 4),
-            "precision": round(main_prec, 4),
-            "false_alarm_rate": round(main_fpr, 4),
-            "roc_auc": round(main_auc, 4),
-            "brier_score": round(main_brier, 4),
+            "f1": round(retrained_f1, 4),
+            "recall": round(retrained_rec, 4),
+            "precision": round(retrained_prec, 4),
+            "false_alarm_rate": round(retrained_fpr, 4),
+            "roc_auc": round(retrained_auc, 4),
+            "brier_score": round(retrained_brier, 4),
         },
+        "main_model_retrained": {
+            "f1": round(retrained_f1, 4),
+            "recall": round(retrained_rec, 4),
+            "precision": round(retrained_prec, 4),
+            "false_alarm_rate": round(retrained_fpr, 4),
+            "roc_auc": round(retrained_auc, 4),
+            "brier_score": round(retrained_brier, 4),
+        },
+        "main_model_fixed_ood": fixed_metrics,
         "baseline_model": {
             "f1": round(base_f1, 4),
             "recall": round(base_rec, 4),
@@ -196,37 +220,57 @@ def evaluate_cohort_scenario(
             "roc_auc": round(base_auc, 4),
             "brier_score": round(base_brier, 4),
         },
-        "relative_f1_gain": round((main_f1 - base_f1) / max(1e-5, base_f1) * 100, 1),
+        "relative_f1_gain": round((retrained_f1 - base_f1) / max(1e-5, base_f1) * 100, 1),
         "archetype_breakdown": arch_breakdown,
     }
 
 
 def run_all_sensitivity_tests(seed: int = 42) -> Dict[str, Any]:
     """Runs all 4 cohort stress test scenarios and aggregates results."""
+    # First, train the fixed reference model on the balanced reference cohort
+    ref_cfg = SCENARIO_CONFIGURATIONS["reference_balanced"]
+    df_ref = generate_cohort(seed=seed, archetype_counts=ref_cfg["archetype_counts"])
+    X_ref_train, y_ref_train, _ = prepare_feature_matrix(df_ref[df_ref["week"] <= 10])
+    fixed_ref_model = TransparentMultiSignalModel(random_state=seed)
+    fixed_ref_model.fit(X_ref_train, y_ref_train)
+
     results = {}
     for key, cfg in SCENARIO_CONFIGURATIONS.items():
         print(f"--> Executing stress test: {cfg['name']}...")
-        results[key] = evaluate_cohort_scenario(key, cfg, seed=seed)
+        results[key] = evaluate_cohort_scenario(
+            key, cfg, seed=seed, fixed_model=fixed_ref_model
+        )
     return results
 
 
 def format_markdown_summary(results: Dict[str, Any]) -> str:
     """Formats sensitivity test results into an auditable Markdown report table."""
     lines = [
-        "| Cohort Scenario | Model | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Calibration | ROC-AUC |",
-        "| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+        "### Paradigm A: Fixed Reference Model (Zero Retraining / Out-of-Distribution Transfer)",
+        "| Cohort Scenario | Base Rate | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Loss | ROC-AUC |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |",
     ]
 
     for key, data in results.items():
         scen_name = data["name"]
-        m = data["main_model"]
-        b = data["baseline_model"]
-
+        m = data["main_model_fixed_ood"] or data["main_model_retrained"]
         lines.append(
-            f"| **{scen_name}** | **Main 5-Signal** | **{m['f1']:.3f}** | **{m['recall']*100:.1f}%** | **{m['precision']*100:.1f}%** | **{m['false_alarm_rate']*100:.1f}%** | **{m['brier_score']:.3f}** | **{m['roc_auc']:.3f}** |"
+            f"| **{scen_name}** | {data['disengagement_base_rate']*100:.1f}% | **{m['f1']:.3f}** | **{m['recall']*100:.1f}%** | **{m['precision']*100:.1f}%** | **{m['false_alarm_rate']*100:.1f}%** | **{m['brier_score']:.3f}** | **{m['roc_auc']:.3f}** |"
+        )
+
+    lines.append("\n### Paradigm B: Retrained Scenario Model (In-Domain Learning Capacity)")
+    lines.append("| Cohort Scenario | Model | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Loss | ROC-AUC |")
+    lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |")
+
+    for key, data in results.items():
+        scen_name = data["name"]
+        m = data["main_model_retrained"]
+        b = data["baseline_model"]
+        lines.append(
+            f"| **{scen_name}** | **Main (Retrained)** | **{m['f1']:.3f}** | **{m['recall']*100:.1f}%** | **{m['precision']*100:.1f}%** | **{m['false_alarm_rate']*100:.1f}%** | **{m['brier_score']:.3f}** | **{m['roc_auc']:.3f}** |"
         )
         lines.append(
-            f"| *(Base Rate: {data['disengagement_base_rate']*100:.1f}%)* | Lagging Baseline | {b['f1']:.3f} | {b['recall']*100:.1f}% | {b['precision']*100:.1f}% | {b['false_alarm_rate']*100:.1f}% | {b['brier_score']:.3f} | {b['roc_auc']:.3f} |"
+            f"| *(Obs: {data['total_observations_generated']})* | Lagging Baseline | {b['f1']:.3f} | {b['recall']*100:.1f}% | {b['precision']*100:.1f}% | {b['false_alarm_rate']*100:.1f}% | {b['brier_score']:.3f} | {b['roc_auc']:.3f} |"
         )
 
     return "\n".join(lines)
@@ -248,8 +292,13 @@ def main():
     with open(args.output, "w") as f:
         json.dump(results, f, indent=2)
 
+    total_gen = sum(d["total_observations_generated"] for d in results.values())
+    total_train = sum(d["train_observations"] for d in results.values())
+    total_test = sum(d["test_observations"] for d in results.values())
+
     print("\n" + "=" * 70)
     print("                  STRESS TESTING RESULTS SUMMARY")
+    print(f"Total Student-Weeks Generated: {total_gen:,} (Train: {total_train:,} | Holdout Test: {total_test:,})")
     print("=" * 70 + "\n")
     print(format_markdown_summary(results))
     print("\n" + "=" * 70)
