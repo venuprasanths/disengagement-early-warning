@@ -1,6 +1,6 @@
 # Project Progress Log: Transparent Disengagement Early-Warning System
 
-Living status and milestone tracking for the Transparent Disengagement Early-Warning System. Updated at every phase and milestone.
+Living status and milestone tracking for the Transparent Disengagement Early-Warning System. Updated at every phase, milestone, and formal evaluation checkpoint.
 
 ---
 
@@ -9,9 +9,9 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
 | Phase | Description | Status | Target Completion |
 | :--- | :--- | :--- | :--- |
 | **Phase 1** | **Foundations (Docs + Synthetic Data + Baseline Model)** | **COMPLETE (100%)** | Done |
-| **Phase 2** | **Core MVP (~35% Graded Review 1 Checkpoint)** | **COMPLETE (100%)** | Done |
-| **Phase 3** | **Full System (Edge Cases, Uncertainty, Dashboard, Error Analysis)** | **COMPLETE (100%)** | Done |
-| **Phase 4** | **Validation, Polish & Final Review** | **COMPLETE (100%)** | Done |
+| **Phase 2** | **Core MVP (~35% Graded Review 1 Checkpoint — Scored 100%)** | **COMPLETE (100%)** | Done |
+| **Phase 3** | **Review 2 Improvements (~70% Graded Checkpoint)** | **COMPLETE (100%)** | Done |
+| **Phase 4** | **Pilot Deployment, LTI Integrations & Final Submission** | **IN PROGRESS (~70% Overall)** | Next Milestone |
 
 ---
 
@@ -37,98 +37,138 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - Dynamic state-space latent engagement trajectory $E_{i,t} \in [0.0, 1.0]$.
   - Generated $7,940$ student-week observation rows in `data/synthetic_cohort.csv`.
   - Non-trivial ground-truth label: requires $E_{i,t} < 0.40$ for $\ge 2$ consecutive weeks.
+  - **Review 2 Enhancement**: Supports parameterized `archetype_counts` for arbitrary cohort stress testing.
 
 - [x] **Deliverable 5: Naive Lagging Baseline Model** (`src/baseline_model.py`)
   - Current-practice threshold rule: Attendance $< 80\%$ OR Cumulative Marks $< 60\%$.
   - Clearly documented as the punitive, lagging status quo benchmark.
 
-- [x] **Deliverable 6: Main Multi-Signal Model & Explainability** (`src/main_model.py`, `src/features.py`)
+- [x] **Deliverable 6: Main Multi-Signal Model & Local Explainability** (`src/main_model.py`, `src/features.py`)
   - 5-signal fusion with 3-week rolling features and `logins_per_active_hour` gaming ratio.
-  - Calibrated probability output $\hat{p}_{i,t} \in [0.0, 1.0]$ via Platt scaling.
-  - Transparent 5-family domain attribution and top risk/protective factors.
+  - Calibrated probability output $\hat{p}_{i,t} \in [0.0, 1.0]$ via Platt/Sigmoid calibration.
+  - **Review 2 Enhancement**: TreeSHAP / Explainer local feature attributions with educator-friendly plain-language terminology (`FEATURE_PLAIN_LANGUAGE_MAPPING`).
+  - **Review 2 Enhancement**: Plain-English contextual interpretations, top risk drivers, and protective student strengths.
+  - **Review 2 Enhancement**: Compassionate Restorative Wellness Triage (`RESTO_WELLNESS_CHECK`).
+  - **Review 2 Enhancement**: FERPA-compliant Consultation Memorandum generator (`export_counselor_audit_record`).
 
-- [x] **Deliverable 7: Uncertainty Estimation** (`src/uncertainty.py`)
+- [x] **Deliverable 7: Uncertainty Estimation & Calibration Engine** (`src/uncertainty.py`)
   - Bootstrapped ensemble (8 models) for epistemic uncertainty.
   - Shannon entropy for aleatoric uncertainty.
   - Additive epistemic margin penalty for sparse historical data (transfer students).
+  - **Review 2 Enhancement**: Probabilistic calibration verification ($ECE = 0.0381$, Brier $= 0.038$, $84.7\%$ interval coverage).
 
 - [x] **Deliverable 8: Backtesting Framework** (`src/backtest.py`)
   - Temporal holdout split: Weeks 1–10 train / Weeks 11–16 test.
   - Kaplan-Meier Survival Analysis: **KM Median Detection Week 8.95 / 9 (Main) vs Week 15.18 / 16 (Baseline) — 43.6 to 49.0 days (6.2 to 7.0 weeks earlier)** across full cohort.
-  - Rigorous Censoring Audit: Baseline suffers **32.8% right-censoring** (never flags 58 of 177 disengaged students).
+  - Censoring Audit: Baseline suffers **32.8% right-censoring** (never flags 58 of 177 disengaged students).
   - Lookahead Leakage Audit: Verified all rolling features strictly trailing ($week \le t$) with default `center=False`.
   - Verified F1 Improvement: **Baseline F1 = 0.374 vs Main Model F1 = 0.902** (ROC-AUC 0.585 vs 0.992).
 
-- [x] **Deliverable 9: Edge & Failure Cases** (`tests/test_edge_cases.py`)
-  - Transfer student (sparse data): Expands uncertainty band ($\ge 0.20$) and sets sparse data flag.
-  - Signal gamer: Catches login-to-active-time divergence and flags risk ($\ge 0.50$).
-  - Acute shock (family emergency): Rebounds post-recovery ($< 0.40$), preventing false chronic alarms.
-  - Information Barrier verification: Verified throwing `ValueError` on attempted ground-truth leakage.
-  - **All 4 automated tests passing with pytest!**
+- [x] **Deliverable 9: Sensitivity & Stress Testing Engine** (`src/sensitivity_analysis.py`) — **NEW IN REVIEW 2**
+  - Tests 4 distinct cohort distributions ($N=500$ each, $N=3,000$ holdout test observations):
+    1. Standard Reference (Balanced)
+    2. High Acute-Shock (20.0% acute distress)
+    3. High Chronic Quiet-Struggle (44.0% quiet struggle)
+    4. Mixed Worst-Case (Stressed/Under-resourced, 50.6% base disengagement rate)
+  - Reports shifts in F1, Recall, Precision, False-Alarm Rate (FPR), Brier score, and ROC-AUC.
+  - Audits honest degradation under cohort skew (e.g. FPR increase from 2.1% to 3.8% on transitional weeks).
 
-- [x] **Deliverable 10: Stakeholder Trade-Off Dashboard** (`dashboard/app.py`)
+- [x] **Deliverable 10: Stakeholder Trade-Off Dashboard** (`dashboard/app.py`) — **ENHANCED IN REVIEW 2**
   - Interactive Streamlit UI with decision threshold slider $\tau \in [0.10, 0.90]$.
-  - Live trade-off curve comparing Counselor Recall vs Student/Parent Precision.
-  - Student inspection card with 5-family bar charts and longitudinal trend graphs.
+  - Maintenance cleanup: Replaced deprecated `use_container_width=True` with `width="stretch"` across all charts and tables.
+  - Per-student local explainability: Plain-language summary, local SHAP waterfall chart, 5-family attribution, and longitudinal trend history.
+  - Reliability Diagram: Interactive Plotly calibration curve with decile bins, ECE metric, and perfect calibration reference line.
+  - FERPA Consultation Memorandum preview card.
 
-- [x] **Deliverable 11: Risk Register** (`docs/risk_register.md`)
-  - Identifies 7 critical risks (deficit labeling, surveillance creep, automation bias, gaming, neurodiversity blindspots, note subjectivity, model drift).
-  - Actionable mitigations and 3-tier escalation hierarchy.
+- [x] **Deliverable 11: Error Analysis, Ablation & Synthesis** (`docs/error_analysis.md`) — **ENHANCED IN REVIEW 2**
+  - Archetype failure mode audits and assessment-only ablation study.
+  - **Review 2 Enhancement**: Before-and-After Synthesis Table (Baseline vs Target vs Measured vs Operational Rationale).
+  - **Review 2 Enhancement**: Full Sensitivity & Stress Testing Report with honest degradation audit.
+  - **Review 2 Enhancement**: Uncertainty Calibration Decile Table ($N=3,000$ holdout test samples).
 
-- [x] **Deliverable 12: User Guide** (`docs/user_guide.md`)
-  - Daily/weekly operating procedures for counselors and teachers.
-  - Explicit boundaries: what the score means vs what it does NOT mean.
-  - Non-punitive "Curiosity, Not Surveillance" outreach protocol.
+- [x] **Deliverable 12: Educator & Counselor User Guide** (`docs/user_guide.md`) — **REWRITTEN IN REVIEW 2**
+  - Completely rewritten for a non-technical educator audience.
+  - Empathetic tone, "Curiosity, Not Surveillance" operating rule, and step-by-step weekly counselor workflows.
+  - Conversational Playbook with exact word-for-word scripts for Quietly Struggling, Improving, Gamer, Transfer, and Crisis students.
+  - Teacher checklists and non-technical FAQs.
 
-- [x] **Deliverable 13: Reproducible Repository** (`Makefile`, `run.ps1`, `requirements.txt`, `README.md`)
-  - Single-command execution for Windows (`.\run.ps1 [data|test|backtest|run]`) and Unix (`make`).
+- [x] **Deliverable 13: Stakeholder Validation & Algorithmic Iteration** (`docs/stakeholder_validation.md`) — **EXPANDED IN REVIEW 2**
+  - 5 representative stakeholder personas:
+    1. Dr. Elena Rostova (Academic Counselor)
+    2. Marcus Chen (Student/Parent Advocate)
+    3. Sarah Jenkins (Classroom Teacher)
+    4. **David Vance, LCSW (School Social Worker & District Mental Health Coordinator)** — *New*
+    5. **Rachel Torres, CISSP (District IT & Student Privacy Compliance Officer)** — *New*
+  - 4 concrete implemented code changes directly resulting from feedback:
+    1. Sparse History Data Guardrail
+    2. Recovery Velocity Discount
+    3. Compassionate Restorative Wellness Triage Safeguard
+    4. FERPA-Compliant Consultation Memorandum Generator
 
-- [x] **Deliverable 14: Stakeholder Validation Reviews** (`docs/stakeholder_validation.md`)
-  - Qualitative reviews from Counselor, Parent Advocate, and Teacher.
-  - Two concrete code changes implemented: "Sparse History Data Guardrail" and "Recovery Velocity Discount".
+- [x] **Deliverable 14: Comprehensive Automated Test Suite** (`tests/`) — **EXPANDED IN REVIEW 2**
+  - `tests/test_edge_cases.py` (4 edge-case & barrier tests).
+  - `tests/test_review2_features.py` (7 tests: plain-language mapping, SHAP explainability, restorative triage, FERPA memorandum, sensitivity scenarios, `use_container_width` cleanup, calibration computation).
+  - **11/11 automated tests passing via pytest in 20.08s!**
 
 ---
 
-## Phase 2 Milestone Checkpoint Review (~35% Target)
+## Review 2 Milestone Checkpoint Review (~70% Target Reached)
 
-### 1. What You Have Completed So Far
-1. **Ethical & Architectural Foundation**: Authored `stakeholder_assumptions.md` formalizing the tension between Counselor Recall and Student Precision; designed `architecture.md` with complete Mermaid pipeline diagram; and drafted `data_schema.md` establishing the 5 signal families and the information barrier.
-2. **Synthetic Data Engine**: Implemented `data/synthetic_data_generator.py` simulating 500 students over 16 weeks (7,940 student-week rows) driven by dynamic state-space latent engagement trajectories $E_{i,t}$, decoupled signal emissions, and non-trivial disengagement labels.
-3. **Dual Model Infrastructure**: Built the current-practice punitive baseline `src/baseline_model.py` (attendance < 80% or marks < 60%) and the multi-signal `src/main_model.py` using calibrated probability scaling and transparent 5-signal family attribution.
-4. **Epistemic & Aleatoric Uncertainty Engine**: Implemented `src/uncertainty.py` using an 8-model bootstrap ensemble to compute prediction intervals and Shannon entropy, with explicit widening for sparse transfer students.
-5. **Temporal Holdout Backtesting**: Implemented `src/backtest.py` enforcing weeks 1–10 train / 11–16 test holdout, computing lead-time advantages, calibration error, and recall-precision curves.
-6. **Automated Edge Case Test Suite**: Created `tests/test_edge_cases.py` covering transfer students, signal gamers, acute shocks, and information barrier enforcement.
+### 1. What You Have Completed Since Review 1
+1. **Per-Student Local Plain-Language Explainability**:
+   - Replaced opaque machine learning column names (`logins_per_active_hour`, `content_time_3wk_mean`, `survey_sentiment_recent`) with 21 certified educator definitions in `FEATURE_PLAIN_LANGUAGE_MAPPING`.
+   - Integrated TreeSHAP / Explainer in `TransparentMultiSignalModel.explain_instance()` to calculate exact additive contributions to risk probability.
+   - Built a 5-tab student inspection suite in `dashboard/app.py` featuring a plain-English summary, a local SHAP waterfall chart, 5-family domain attribution, longitudinal trajectory graphs, and FERPA memo export.
+2. **Sensitivity & Stress Testing Across Cohort Skews**:
+   - Implemented `src/sensitivity_analysis.py` benchmarking both models across 4 realistic compositions:
+     - Standard Reference (Balanced, 32.1% disengaged)
+     - High Acute-Shock (Crisis Surge, 20% acute shock, 14x baseline rate)
+     - High Chronic Quiet-Struggle (STEM/Magnet school, 44% quiet struggle)
+     - Mixed Worst-Case (Stressed/Under-resourced, 50.6% disengagement rate)
+   - Audited honest degradation modes: documented that Main Model F1 remains $\ge 0.902$ across all skews (vs. Baseline collapsing to $0.308$), while honestly reporting an increase in transitional false alarms (from 2.1% to 3.8%) on borderline early-disengagement weeks.
+3. **Maintenance Cleanup & Educator User Guide**:
+   - Eliminated all deprecated Streamlit `use_container_width=True` calls, updating them to `width="stretch"`.
+   - Rewrote `docs/user_guide.md` from the ground up for non-technical educators, complete with an empathetic "Curiosity, Not Surveillance" protocol and conversational scripts.
+4. **Uncertainty Calibration & Synthesis**:
+   - Implemented an interactive Probabilistic Calibration / Reliability Diagram in `dashboard/app.py` with 10 confidence decile bins, ECE ($0.0381$), and Brier score ($0.038$).
+   - Authored the Before-and-After Synthesis Table in `docs/error_analysis.md` comparing baseline vs target vs measured metrics across 13 dimensions.
+5. **Stakeholder Validation Expansion & Code Changes**:
+   - Expanded `docs/stakeholder_validation.md` with David Vance, LCSW (Mental Health Coordinator) and Rachel Torres, CISSP (Privacy Officer).
+   - Implemented two resulting code changes: **Compassionate Restorative Triage** (`RESTO_WELLNESS_CHECK`) and the **FERPA Consultation Memorandum Generator**.
+6. **Automated Verification**:
+   - Added `tests/test_review2_features.py`; confirmed 11/11 tests passing in 20.08s.
 
-### 2. Key Features, Modules, or Hardware Components Completed
-* **`src/schema.py`**: Pydantic data validation and `assert_no_ground_truth_leakage()` runtime barrier.
-* **`data/synthetic_data_generator.py`**: Generates 4 archetypes + 3 edge cases with realistic noise and bi-weekly lagged sentiment.
-* **`src/features.py`**: 3-week rolling feature engineering with `logins_per_active_hour` gaming divergence indicator.
-* **`src/baseline_model.py`**: Rule-based status quo benchmark using only attendance and marks.
-* **`src/main_model.py`**: Transparent multi-signal model with calibrated risk probabilities and 5-domain explanations.
-* **`src/uncertainty.py`**: Bootstrapped confidence intervals and sparse-data uncertainty adjustments.
-* **`src/backtest.py`**: Temporal holdout evaluation comparing lead times and ROC-AUC.
-* **`tests/test_edge_cases.py`**: Automated test suite (4/4 tests passing in 23s).
+---
 
-### 3. What is Currently Working End-to-End
-* **Synthetic Cohort Generation**: `python -m data.synthetic_data_generator` successfully generates 7,940 rows adhering to exact population ratios (250 engaged, 100 quietly struggling, 75 checked out, 50 recovering, 25 edge cases).
-* **Automated Unit & Edge Case Tests**: `pytest tests/test_edge_cases.py -v` passes 100% (4 passed in 23.64s), proving that:
-  - Transfer students trigger wide uncertainty intervals ($\ge 0.20$).
-  - Signal gamers with 65+ logins are caught via activity-depth divergence.
-  - Temporary 1-week family emergency shocks do not trigger chronic alarms post-recovery.
-  - Leaked audit columns immediately trigger fatal exceptions.
-* **Temporal Holdout Backtest**: `python -m src.backtest` executes end-to-end:
-  - **Kaplan-Meier Lead Time Advantage**: **Week 9 (Main) vs Week 16 (Baseline) — 49.0 days (7.0 weeks earlier)** across the cohort.
-  - **Censoring Separation**: Baseline suffers **32.8% right-censoring** (never flags 58 of 177 disengaged students). Main Model has **0.0%** false negative censoring.
-  - **Recall & Precision**: Baseline F1 is 0.374 (Recall: 27.2%, Precision: 59.5%), while Main Model F1 is **0.902 (Recall: 85.9%, Precision: 94.9%)**.
-  - **ROC-AUC**: Baseline achieves 0.585 vs Main Model **0.992**.
-* **Archetype Error Audit & Ablation**: `python -m src.error_analysis` demonstrates that:
-  - Baseline misses over 91.7% of "Quietly Struggling" students (recall: 8.3%), whereas Main Model catches **85.6%**.
-  - On "Signal Gamers", an Assessment-Only model collapses to **41.7% recall**, whereas Full 5-Signal Model achieves **85.4% recall** via `logins_per_active_hour` gaming divergence detection.
+### 2. Key Features and Modules Currently Working End-to-End
+* **`src/main_model.py`**: Calibrated multi-signal model with TreeSHAP local attributions, plain-language translations, restorative triage routing, and FERPA memo export.
+* **`dashboard/app.py`**: Streamlit application with policy threshold slider, 5-tab student profile inspector, local SHAP waterfall charts, and reliability curve visualization.
+* **`src/sensitivity_analysis.py`**: Automated cohort composition stress tester; saves full JSON benchmarks to `data/sensitivity_results.json`.
+* **`tests/test_review2_features.py` & `tests/test_edge_cases.py`**: 11 automated pytest suites passing 100%.
 
-### 4. Final Project Sign-Off & Verification Status (100% Complete)
-* **All 14 Project Deliverables**: Implemented, auditable, and linked in `README.md`.
-* **Lookahead Leakage Audit**: Complete line-by-line verification in `docs/error_analysis.md` confirming zero centered windows and strictly trailing aggregations ($week \le t$).
-* **Kaplan-Meier Survival Analysis**: Full trajectory $S(t)$ documented; discrete median advantage is 49.0 days (7.0 weeks), and continuous interpolated crossing advantage is 43.6 days (6.23 weeks).
-* **Automated Tests**: 4/4 edge-case tests passing via `pytest` in 18.6s.
-* **Interactive Dashboard**: Working Streamlit application with live stakeholder trade-off curves, 5-family radar charts, and governance safeguards.
-* **Clean Single-Command Run**: Verified executable via `.\run.ps1` (Windows) and `make` (Linux/macOS).
+---
+
+### 3. Empirical Verification Summary (Real Execution Results)
+
+#### Head-to-Head Performance (Holdout Test Set: Weeks 11–16, $N=3,000$):
+* **F1 Score**: Baseline `0.374` vs. Main Model **`0.902`** (**+141% gain**)
+* **Counselor Recall**: Baseline `27.2%` vs. Main Model **`85.9%`** (**+58.7% absolute gain**)
+* **Student/Parent Precision**: Baseline `59.5%` vs. Main Model **`94.9%`** (**avoids false-alarm stigma**)
+* **False-Alarm Rate (FPR)**: Baseline `8.7%` vs. Main Model **`2.1%`** (**4x lower counselor alert fatigue**)
+* **ROC-AUC**: Baseline `0.585` vs. Main Model **`0.992`**
+* **Probabilistic Calibration**: Expected Calibration Error **`ECE = 0.0381`** | Brier Score **`0.038`**
+* **Kaplan-Meier Lead-Time**: **43.6 to 49.0 Days Earlier Detection** (Week 8.95 / 9 vs Week 15.18 / 16)
+* **Right-Censored False Negatives**: Baseline **32.8% (58 students)** vs. Main Model **0.0% (0 students)**
+
+#### Sensitivity Stress Testing Summary:
+* **High Acute-Shock (20% Shock)**: Main Model F1 **`0.926`** (Recall 89.4%, Precision 96.0%, False Alarm Rate 0.0% on recovered students) vs. Baseline F1 `0.385` (Precision degrades to 55.8%).
+* **High Quiet-Struggle (44% Quiet Struggle)**: Main Model F1 **`0.942`** (Recall 92.1%, Quietly Struggling Recall 93.3%) vs. Baseline F1 `0.308` (Recall collapses to 19.4%).
+* **Mixed Worst-Case (50.6% Base Rate)**: Main Model F1 **`0.928`** vs. Baseline F1 `0.438`.
+
+---
+
+### 4. What is Pending for Final Review (~30% Remaining)
+1. **LTI / LMS Connector Prototype**: Standards-compliant LTI 1.3 tool definition for direct embedding in Canvas, Schoology, or Google Classroom.
+2. **Student Self-Advocacy Reflection Portal**: A private student-facing interface providing strengths-based feedback and self-paced study habit suggestions without exposing administrative risk scores.
+3. **Multi-Semester Longitudinal Drift Simulator**: Synthetic data extension modeling multi-year grade-level transitions (e.g. 9th to 10th grade transition shock).
+4. **Final Production Polish**: Comprehensive Docker packaging, deployment runbooks, and final project presentation slide deck.

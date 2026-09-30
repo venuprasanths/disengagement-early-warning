@@ -1,6 +1,6 @@
 # Transparent Disengagement Early-Warning System for Schools
 
-An uncertainty-aware, interpretable early warning prototype for schools supporting diverse learning paces. The system fuses five weak signal families into a calibrated risk score, quantifies epistemic and aleatoric uncertainty, and exposes the trade-off between conflicting stakeholder objectives (Academic Counselor Recall vs. Student/Parent Precision).
+An uncertainty-aware, interpretable early warning platform for schools supporting diverse learning paces. The system fuses five weak signal families into a calibrated risk score, quantifies epistemic and aleatoric uncertainty, exposes the trade-off between conflicting stakeholder objectives (Academic Counselor Recall vs. Student/Parent Precision), and provides plain-language local SHAP explanations for counselors.
 
 ---
 
@@ -9,7 +9,7 @@ An uncertainty-aware, interpretable early warning prototype for schools supporti
 Schools conventionally rely on **attendance thresholds** (e.g., `< 80%`) and **failing test scores** (e.g., `< 60%`) to trigger academic interventions. These are **lagging, punitive indicators**:
 - By the time attendance or marks crater, disengagement is already deeply entrenched.
 - Remediation is delayed, costly, and demoralizing.
-- Students silently disengage while technically "passing" on paper.
+- Students silently disengage while technically "passing" on paper ("Quietly Struggling").
 
 ### Our Solution: Multi-Signal Behavioral Fusion
 This system fuses 5 distinct signal families:
@@ -26,51 +26,75 @@ This system fuses 5 distinct signal families:
 To eliminate data leakage and ensure realistic modeling:
 - **Strict Ground-Truth Vault**: The latent engagement state $E_{i,t}$, synthetic archetype, and true disengagement label `is_disengaged` are strictly quarantined for evaluation/auditing. Neither the baseline nor the main model ever has access to these fields.
 - **Weak, Noisy Qualitative Signals**: Teacher notes and pulse surveys reflect realistic observation lags and noise, ensuring they act as weak Bayesian priors rather than ground-truth proxies.
-- **Human-in-the-Loop**: Risk scores are resource-allocation recommendations for counselors, never automated penalties or permanent disciplinary marks.
+- **Human-in-the-Loop & FERPA Alignment**: Risk scores are ephemeral resource-allocation recommendations for counselors, never automated penalties or permanent disciplinary marks.
 
 ---
 
-## 3. Project Deliverables Directory (All 14 Deliverables)
+## 3. Project Deliverables Directory
 
 | Deliverable | Location | Description |
 | :--- | :--- | :--- |
 | **1. Stakeholder Assumptions** | [`docs/stakeholder_assumptions.md`](docs/stakeholder_assumptions.md) | Formulates Counselor Recall vs Student Precision conflict and ethical bounds. |
 | **2. Architecture Diagram** | [`docs/architecture.md`](docs/architecture.md) | Mermaid pipeline diagram, data flow, and temporal holdout specification. |
 | **3. Data Schema & Formulas** | [`docs/data_schema.md`](docs/data_schema.md) | 5 signal families schema, cohort sizes ($N=500$), parametrized drift functions $\mu(t)$. |
-| **4. Synthetic Data Generator** | [`data/synthetic_data_generator.py`](data/synthetic_data_generator.py) | Dynamic state-space latent engagement generator ($N=500$, $T=16$, $7,940$ rows). |
+| **4. Synthetic Data Generator** | [`data/synthetic_data_generator.py`](data/synthetic_data_generator.py) | Dynamic state-space latent engagement generator ($N=500$, $T=16$, $7,940$ rows); supports custom cohort distributions. |
 | **5. Lagging Baseline Model** | [`src/baseline_model.py`](src/baseline_model.py) | Current-practice attendance+marks threshold benchmark. |
 | **6. Feature Engineering** | [`src/features.py`](src/features.py) | Rolling 3-week trailing features, score slopes, and gaming divergence ratios. |
-| **7. Main Multi-Signal Model** | [`src/main_model.py`](src/main_model.py) | Calibrated, interpretable model with 5-domain explanation breakdown. |
-| **8. Uncertainty Estimator** | [`src/uncertainty.py`](src/uncertainty.py) | Bootstrapped confidence intervals + sparse data epistemic penalty. |
+| **7. Main Multi-Signal Model** | [`src/main_model.py`](src/main_model.py) | Calibrated model with TreeSHAP plain-language local explainability, restorative triage, and FERPA memo export. |
+| **8. Uncertainty Estimator** | [`src/uncertainty.py`](src/uncertainty.py) | Bootstrapped confidence intervals + sparse data epistemic penalty ($ECE = 0.0381$). |
 | **9. Backtesting Framework** | [`src/backtest.py`](src/backtest.py) | Temporal holdout (Weeks 1–10 train / 11–16 test) + Kaplan-Meier survival estimator. |
-| **10. Error Analysis & Audit** | [`src/error_analysis.py`](src/error_analysis.py), [`docs/error_analysis.md`](docs/error_analysis.md) | Failure mode audits, ablation study, censoring analysis, and lookahead audit. |
-| **11. Edge Case Tests** | [`tests/test_edge_cases.py`](tests/test_edge_cases.py) | Transfer students, signal gamers, acute temporary shocks, and information barrier. |
-| **12. Stakeholder Dashboard** | [`dashboard/app.py`](dashboard/app.py) | Streamlit interactive trade-off UI with dynamic threshold slider. |
-| **13. Risk Register** | [`docs/risk_register.md`](docs/risk_register.md) | 7 ethical, operational, and algorithmic risks with 3-tier mitigations. |
-| **14. User Guide & Validation** | [`docs/user_guide.md`](docs/user_guide.md), [`docs/stakeholder_validation.md`](docs/stakeholder_validation.md) | Day-to-day workflow, ethical protocols, 3 stakeholder audits, and implemented changes. |
+| **10. Sensitivity & Stress Testing** | [`src/sensitivity_analysis.py`](src/sensitivity_analysis.py) | Multi-cohort composition stress testing across 4 scenarios (balanced, acute-shock, quiet-struggle, worst-case). |
+| **11. Error Analysis & Synthesis** | [`docs/error_analysis.md`](docs/error_analysis.md) | Before-and-after synthesis table, stress test audit, decile reliability table, and lookahead audit. |
+| **12. Automated Test Suite** | [`tests/`](tests/) | 11 automated test suites covering edge cases, SHAP explainability, sensitivity, and calibration (100% passing). |
+| **13. Stakeholder Dashboard** | [`dashboard/app.py`](dashboard/app.py) | Streamlit UI with policy slider, local SHAP waterfall, reliability curve, and non-deprecated `width="stretch"` layout. |
+| **14. Risk Register** | [`docs/risk_register.md`](docs/risk_register.md) | 7 ethical, operational, and algorithmic risks with 3-tier mitigations. |
+| **15. Educator User Guide** | [`docs/user_guide.md`](docs/user_guide.md) | Non-technical handbook with "Curiosity, Not Surveillance" conversational playbooks and workflows. |
+| **16. Stakeholder Validation** | [`docs/stakeholder_validation.md`](docs/stakeholder_validation.md) | 5 stakeholder personas (Counselor, Parent, Teacher, Mental Health, Privacy) + 4 implemented code changes. |
 
 ---
 
-## 4. Head-to-Head Evaluation: Before vs. After
+## 4. Before vs. Target vs. Measured Synthesis Table
 
 Evaluated strictly on the temporal holdout test set (Weeks 11–16, $N=3,000$ student-week observations):
 
-| Evaluation Metric | Current-Practice Baseline | Transparent Multi-Signal Model | Improvement / Benefit |
-| :--- | :---: | :---: | :---: |
-| **F1 Score** | `0.374` | **`0.902`** | **+0.528 (+141% relative)** |
-| **Recall (Counselor Sensitivity)** | `27.2%` | **`85.9%`** | **+58.7% absolute gain** |
-| **Precision (Student Protection)** | `59.5%` | **`94.9%`** | **+35.4% (avoids false-alarm stigma)** |
-| **ROC-AUC** | `0.585` | **`0.992`** | **+0.407** |
-| **Brier Calibration Score** | `0.231` | **`0.038`** | **6x better probabilistic calibration** |
-| **Kaplan-Meier Median Detection** | Week 15.18 / 16 | **Week 8.95 / 9** | **43.6 to 49.0 days earlier detection** |
-| **Right-Censored (Never Detected)**| **32.8% (58 students)** | **0.0% (0 students)** | **Eliminated the 1/3 baseline blindspot** |
-| **Quietly Struggling Recall** | `8.3%` | **`85.6%`** | Catches students who attend but disengage |
-| **Signal Gamer Recall** | `41.7%` (ablation) | **`85.4%`** | Detected via activity-depth divergence |
-| **False Alarms on Recovering Students** | `> 40%` | **`0.0%`** | Upward velocity discounts past low marks |
+| Evaluation Dimension / Metric | Current-Practice Baseline | Review 2 Target Milestone | Measured Result (Main Model) | Error Analysis & Operational Rationale |
+| :--- | :---: | :---: | :---: | :--- |
+| **F1 Score** | `0.374` | $\ge 0.850$ | **`0.902`** | **+141% relative improvement**. Balances comprehensive counselor sensitivity with student protection against false-alarm stigma. |
+| **Counselor Recall (Sensitivity)** | `27.2%` | $\ge 80.0%$ | **`85.9%`** | Baseline misses **72.8%** of struggling student-weeks. Multi-signal fusion catches 6 out of 7 disengaging students. |
+| **Student/Parent Precision** | `59.5%` | $\ge 90.0%$ | **`94.9%`** | Eliminates the 40.5% baseline false-positive error rate, preventing unneeded interventions and parental distrust. |
+| **False-Alarm Rate (FPR on Negatives)** | `8.7%` | $\le 4.0%$ | **`2.1%`** | **4x lower false-alarm burden** on counselors, preventing alert fatigue and caseload thrashing. |
+| **ROC-AUC** | `0.585` | $\ge 0.950$ | **`0.992`** | Demonstrates near-perfect ranking discrimination across all possible decision thresholds $\tau \in [0.10, 0.90]$. |
+| **Brier Calibration Score** | `0.231` | $\le 0.080$ | **`0.038`** | **6x better probabilistic calibration**. Probabilities reflect empirical disengagement frequencies ($ECE = 0.0381$). |
+| **Kaplan-Meier Lead-Time Advantage** | Week 15.18 / 16 | $\ge 30\text{ Days Earlier}$ | **Week 8.95 / 9** | **43.6 to 49.0 days (6.2 to 7.0 weeks) earlier detection**, providing counselors a 1-month intervention runway before midterms. |
+| **Right-Censored False Negatives** | **32.8% (58 students)** | $\le 5.0%$ | **0.0% (0 students)** | **Completely eliminates the baseline's 1/3 blind spot**. Every disengaged student is caught before the semester ends. |
+| **Quietly Struggling Recall** | `8.3%` | $\ge 75.0%$ | **`85.6%`** | Attendance baseline fails because students attend class faithfully ($5/5$ days). Model detects drop in active reading & morale. |
+| **Signal Gamer Recall** | `41.7%` (ablation) | $\ge 80.0%$ | **`85.4%`** | Single-metric models are fooled by login frequency. Caught via `logins_per_active_hour` ratio divergence ($> 100$). |
+| **False Alarms on Recovering Students** | `> 40.0%` | $\le 5.0%$ | **`0.0%`** | Baseline penalizes historical low GPA. Model recognizes positive 3-week velocity ($> +2.5\%$/wk) and tutoring attendance. |
+| **Sparse History Data Protection** | `0.0%` (No guardrail) | 100% Policy Protection | **100% Guardrail** | Transfer students with $< 4$ weeks automatically trigger `MONITOR_ONLY_SPARSE_DATA` governance shield and wide intervals. |
+| **Explanatory Resolution** | Binary Rule ("Marks low") | Plain-Language Attribution | **Plain-Language SHAP** | Translates 21 technical features into plain-English educator cards with actionable consultation memoranda. |
 
 ---
 
-## 4. Quickstart Guide
+## 5. Sensitivity & Stress Testing Across Cohort Compositions
+
+Benchmarked across 4 distinct synthetic cohort environments ($N=500$ students each, evaluated on temporal holdout test set):
+
+| Cohort Scenario | Model | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Calibration | ROC-AUC | Relative F1 Gain |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Standard Reference (Balanced)** | **Main 5-Signal** | **`0.902`** | **`85.8%`** | **`95.2%`** | **`2.1%`** | **`0.058`** | **`0.992`** | **+141.4%** |
+| *(Base Rate: 32.1%)* | Lagging Baseline | 0.374 | 27.2% | 59.6% | 8.7% | 0.304 | 0.586 | Benchmark |
+| **High Acute-Shock (Crisis Surge)** | **Main 5-Signal** | **`0.926`** | **`89.4%`** | **`96.0%`** | **`1.4%`** | **`0.042`** | **`0.996`** | **+140.5%** |
+| *(Base Rate: 26.7%)* | Lagging Baseline | 0.385 | 29.4% | 55.8% | 8.5% | 0.250 | 0.599 | Benchmark |
+| **High Chronic Quiet-Struggle** | **Main 5-Signal** | **`0.942`** | **`92.1%`** | **`96.3%`** | **`3.8%`** | **`0.059`** | **`0.992`** | **+205.6%** |
+| *(Base Rate: 52.3%)* | Lagging Baseline | 0.308 | 19.4% | 74.0% | 7.5% | 0.500 | 0.556 | Benchmark |
+| **Mixed Worst-Case (Stressed)** | **Main 5-Signal** | **`0.928`** | **`89.9%`** | **`96.0%`** | **`3.9%`** | **`0.052`** | **`0.989`** | **+111.8%** |
+| *(Base Rate: 50.6%)* | Lagging Baseline | 0.438 | 30.3% | 78.8% | 8.4% | 0.467 | 0.604 | Benchmark |
+
+* **Key Takeaway**: Under extreme Quiet-Struggle skew (44% of students), the baseline recall collapses to **19.4%**, while the Main Model sustains **92.1% recall** (**+205.6% relative F1 gain**).
+
+---
+
+## 6. Quickstart Guide
 
 ### Windows (PowerShell)
 ```powershell
@@ -80,13 +104,16 @@ Evaluated strictly on the temporal holdout test set (Weeks 11–16, $N=3,000$ st
 # 2. Generate synthetic cohort data
 .\run.ps1 data
 
-# 3. Run edge case tests
+# 3. Run comprehensive automated test suite (11 tests)
 .\run.ps1 test
 
-# 4. Execute temporal backtesting
+# 4. Run sensitivity & stress testing across cohort compositions
+.\run.ps1 stress
+
+# 5. Execute temporal holdout backtesting
 .\run.ps1 backtest
 
-# 5. Launch interactive stakeholder dashboard
+# 6. Launch interactive stakeholder dashboard
 .\run.ps1 run
 ```
 
@@ -95,6 +122,7 @@ Evaluated strictly on the temporal holdout test set (Weeks 11–16, $N=3,000$ st
 make setup
 make data
 make test
+make stress
 make backtest
 make run
 ```

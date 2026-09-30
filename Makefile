@@ -6,7 +6,8 @@ help:
 	@echo "Available commands:"
 	@echo "  make setup     - Install Python dependencies"
 	@echo "  make data      - Generate synthetic cohort dataset"
-	@echo "  make test      - Run edge case tests"
+	@echo "  make test      - Run comprehensive test suite"
+	@echo "  make stress    - Run sensitivity and stress testing across cohorts"
 	@echo "  make backtest  - Run temporal holdout backtesting"
 	@echo "  make run       - Launch Streamlit stakeholder dashboard"
 
@@ -17,7 +18,10 @@ data:
 	$(PYTHON) -m data.synthetic_data_generator --output data/synthetic_cohort.csv --students 500 --weeks 16 --seed 42
 
 test:
-	$(PYTHON) -m pytest tests/test_edge_cases.py -v
+	$(PYTHON) -m pytest tests/ -v
+
+stress:
+	$(PYTHON) -m src.sensitivity_analysis
 
 backtest:
 	$(PYTHON) -m src.backtest
