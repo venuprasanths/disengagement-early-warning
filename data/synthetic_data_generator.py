@@ -30,12 +30,13 @@ def _compute_rolling_slope_and_var(scores: List[float]) -> Tuple[float, float]:
 def generate_cohort(
     n_students: int = 500,
     n_weeks: int = 16,
-    seed: int = 42
+    seed: int = 42,
+    archetype_counts: Optional[Dict[str, int]] = None,
 ) -> pd.DataFrame:
     """
     Generates a full synthetic cohort dataframe.
 
-    Archetype Distribution (N=500):
+    Archetype Distribution (N=500 by default):
     - Consistently Engaged: 250 (50.0%)
     - Quietly Struggling but Attending: 100 (20.0%)
     - Attending but Checked Out: 75 (15.0%)
@@ -47,15 +48,21 @@ def generate_cohort(
     np.random.seed(seed)
 
     # Assign archetypes
-    archetypes = (
-        ["consistently_engaged"] * 250
-        + ["quietly_struggling"] * 100
-        + ["checked_out"] * 75
-        + ["genuinely_improving"] * 50
-        + ["transfer_student"] * 10
-        + ["signal_gamer"] * 8
-        + ["acute_shock"] * 7
-    )
+    if archetype_counts is not None:
+        archetypes = []
+        for arch, count in archetype_counts.items():
+            archetypes.extend([arch] * int(count))
+        n_students = len(archetypes)
+    else:
+        archetypes = (
+            ["consistently_engaged"] * 250
+            + ["quietly_struggling"] * 100
+            + ["checked_out"] * 75
+            + ["genuinely_improving"] * 50
+            + ["transfer_student"] * 10
+            + ["signal_gamer"] * 8
+            + ["acute_shock"] * 7
+        )
 
     records: List[Dict] = []
 
