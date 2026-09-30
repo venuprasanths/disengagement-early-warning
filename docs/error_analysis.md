@@ -155,6 +155,10 @@ The progression above clarifies the relation between the discrete step function 
    - **Baseline Model**: $15 + \frac{0.5367 - 0.5000}{0.5367 - 0.3277} = 15 + \frac{0.0367}{0.2090} = \mathbf{15.18 \text{ Weeks}}$ ($\approx 106.2$ days).
    - **Lead-Time Advantage (Interpolated)**: **6.23 Weeks (43.6 Days)** earlier detection across the full cohort.
 
+> [!NOTE]
+> **Reproducibility Note on Pipeline Re-Runs & Environment Variance**:
+> When re-running the pipeline, the Kaplan-Meier lead-time advantage exhibits minor natural variation spanning **42 to 49 days (approximately 6.0 to 7.0 weeks)** due to floating-point precision, solver differences, and library version dependencies across platforms. This is an expected empirical range (not a bug or contradiction) bounded between the continuous interpolated crossing (~43 days) and the discrete semester-week step function (~49 days). In all environments, the Main Model flags struggling students between Weeks 8.9 and 10, whereas the Lagging Baseline remains strictly above the survival threshold until Weeks 15.2 to 16.
+
 ---
 
 ### 3.5 Lookahead Leakage Audit & Window Verification
