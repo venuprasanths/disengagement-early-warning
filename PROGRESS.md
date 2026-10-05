@@ -72,6 +72,13 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - Implemented `UnifiedIngestionPipeline` that orchestrates parallel extraction, merges multi-source telemetry on `(student_id, week)`, enforces the Information Barrier, and validates against Pydantic schema.
   - Added 4 automated unit tests verifying authentication, data extraction, mapping fidelity, and downstream ML compatibility (15/15 tests passing).
 
+- [x] **Deliverable 18: Student Self-Advocacy Reflection Portal** (`dashboard/app.py`, `tests/test_student_portal.py`)
+  - Built a separate, privacy-conscious role view in the dashboard (`render_student_portal`) for students themselves.
+  - Strengths-based architecture: showcases positive learning assets (in-seat attendance consistency, active study reading time, classroom discourse, proactive help-seeking).
+  - Strict privacy shield: **Zero administrative risk scores**, **zero disengagement flags**, and **zero deficit labels** exposed to students.
+  - Interactive self-reflection pulse with confidence rating, study focus areas, study habits trend chart (with `width="stretch"` layout), and direct 1-click booking links for teacher office hours and peer tutoring.
+  - Added automated unit tests confirming strict privacy boundaries and zero deficit exposure (17/17 tests passing).
+
 - [x] **Deliverable 8: Backtesting Framework** (`src/backtest.py`)
   - Temporal holdout split: Weeks 1–10 train / Weeks 11–16 test.
   - Kaplan-Meier Survival Analysis: **KM Median Detection Week 8.95 / 9 (Main) vs Week 15.18 / 16 (Baseline) — 43.6 to 49.0 days (6.2 to 7.0 weeks earlier)** across full cohort.

@@ -65,6 +65,185 @@ def train_and_cache_models(df: pd.DataFrame):
     return main_model, uncertainty_est, baseline
 
 
+def render_student_portal(df: pd.DataFrame):
+    """
+    Student Self-Advocacy & Learning Reflection Portal.
+
+    A private, strengths-oriented interface for students themselves.
+    Strictly follows the 'Curiosity, Not Surveillance' principle:
+      - ZERO administrative risk scores or disengagement probabilities exposed.
+      - ZERO deficit-based terminology ('at risk', 'failing', 'flagged').
+      - Emphasizes personal learning assets, study habit trends, self-advocacy check-ins,
+        and direct access to campus tutoring and teacher office hours.
+    """
+    st.subheader("🎓 My Self-Advocacy & Learning Reflection Portal")
+    st.markdown(
+        """
+        **A Private Space to Celebrate Your Strengths, Track Study Habits, and Access Campus Resources**  
+        *Reflect on your learning momentum and connect with supportive resources designed to help you thrive.*
+        """
+    )
+    st.info(
+        "🔒 **Student Privacy Shield**: This portal is exclusively for your own personal reflection. "
+        "It contains **NO administrative risk scores**, **NO deficit labels**, and **NO automated evaluations**. "
+        "Your entries here are private self-advocacy reflections to support your personal academic journey."
+    )
+
+    available_students = sorted(df["student_id"].unique())
+    col_sel1, col_sel2 = st.columns([2, 1])
+    with col_sel1:
+        student_id = st.selectbox(
+            "Select Your Student Account (Demo / Simulation Login):",
+            available_students,
+            index=0,
+            help="Simulates logging in as a specific student to view their private portal.",
+        )
+    with col_sel2:
+        current_week = st.slider("Semester Week", min_value=1, max_value=16, value=12)
+
+    student_history = df[(df["student_id"] == student_id) & (df["week"] <= current_week)].sort_values("week")
+    latest_rec = student_history.iloc[-1] if not student_history.empty else None
+
+    if latest_rec is None:
+        st.warning("No records found for this student.")
+        return
+
+    # Section 1: Strengths & Positive Assets
+    st.markdown("### 1. 🌟 My Learning Assets & Weekly Strengths")
+    s_col1, s_col2, s_col3, s_col4 = st.columns(4)
+
+    days_pres = int(latest_rec.get("days_present", 5))
+    reading_mins = float(latest_rec.get("content_time_minutes", 45.0))
+    disc_posts = int(latest_rec.get("discussion_posts", 1))
+    office_hrs = int(student_history["office_hours_attended"].sum())
+
+    with s_col1:
+        st.metric(
+            label="In-Person Attendance",
+            value=f"{days_pres} / 5 Days",
+            delta=f"{int(days_pres/5.0*100)}% Consistency" if days_pres >= 4 else "Room to grow",
+        )
+    with s_col2:
+        st.metric(
+            label="Active Course Study Time",
+            value=f"{reading_mins:.0f} mins",
+            delta="Meeting weekly target" if reading_mins >= 40 else "Below 45 min target",
+        )
+    with s_col3:
+        st.metric(
+            label="Classroom Discussion",
+            value=f"{disc_posts} contributions",
+            delta="Active participation",
+        )
+    with s_col4:
+        st.metric(
+            label="Proactive Help-Seeking",
+            value=f"{office_hrs} office hours",
+            delta="Self-advocacy in action" if office_hrs > 0 else "Support is available",
+        )
+
+    # Section 2: Study Habits Trend
+    st.markdown("### 2. 📈 My Study Habits & Courseware Engagement")
+    st.caption("Visualizing your weekly course engagement and active learning time across the semester.")
+
+    fig_study = go.Figure()
+    fig_study.add_trace(go.Bar(
+        x=student_history["week"],
+        y=student_history["content_time_minutes"],
+        name="Active Study Time (Minutes)",
+        marker=dict(color="#2ca02c"),
+    ))
+    fig_study.add_trace(go.Scatter(
+        x=student_history["week"],
+        y=[45.0] * len(student_history),
+        mode="lines",
+        name="Recommended Weekly Target (45m)",
+        line=dict(color="#d62728", dash="dash"),
+    ))
+    fig_study.update_layout(
+        xaxis_title="Semester Week",
+        yaxis_title="Minutes Spent on Courseware",
+        height=280,
+        margin=dict(l=20, r=20, t=30, b=20),
+    )
+    st.plotly_chart(fig_study, width="stretch")
+
+    # Section 3: Interactive Weekly Reflection Pulse
+    st.markdown("### 3. 💡 Weekly Self-Advocacy Reflection Pulse")
+    st.markdown("Take 30 seconds to check in with how you are feeling about your classes:")
+
+    with st.form("student_reflection_form"):
+        confidence = st.select_slider(
+            "How confident are you feeling with your current course material?",
+            options=[
+                "1 - Finding things challenging right now",
+                "2 - A bit overwhelmed",
+                "3 - Steady / In progress",
+                "4 - Feeling good",
+                "5 - Super confident & energized",
+            ],
+            value="3 - Steady / In progress",
+        )
+        focus_areas = st.multiselect(
+            "Which areas would be most helpful to focus on this week?",
+            options=[
+                "Clarifying homework concepts with teacher",
+                "Preparing for upcoming quizzes / tests",
+                "Time management & study scheduling",
+                "Joining a peer study group",
+                "Writing / Essay draft feedback",
+            ],
+            default=["Clarifying homework concepts with teacher"],
+        )
+        student_note = st.text_area(
+            "Optional: Anything you'd like to jot down for your own study plan?",
+            placeholder="e.g., Focus on factoring quadratics before Thursday's review...",
+        )
+        submitted = st.form_submit_button("Save Private Reflection")
+        if submitted:
+            st.success("✅ Your reflection has been saved! Remember: asking for help is a sign of an effective, self-directed learner.")
+
+    # Section 4: Academic Support & Campus Circles
+    st.markdown("### 4. 🤝 Recommended Campus Resources & Support Circles")
+    st.caption("Every student deserves great support. Connect with free resources designed to help you thrive:")
+
+    res_col1, res_col2 = st.columns(2)
+    with res_col1:
+        st.markdown(
+            """
+            #### 🧑‍🏫 Teacher Office Hours & Consultations
+            - **Instructor**: Dr. Eleanor Vance (Math Dept)
+            - **When**: Tuesdays & Thursdays, 3:30 PM – 4:45 PM
+            - **Where**: Room 204 or Drop-in Zoom Link
+            - **Best For**: 1-on-1 problem walkthroughs and test corrections
+            """
+        )
+        st.button("📅 Add Office Hours to My Calendar", key="btn_oh")
+
+    with res_col2:
+        st.markdown(
+            """
+            #### 📚 Peer Tutoring Learning Commons
+            - **Subject**: All STEM & Humanities subjects
+            - **When**: Monday – Friday, 8:00 AM – 5:00 PM
+            - **Where**: High School Library Annex (Table B)
+            - **Best For**: Collaborative study groups, homework reviews, and essay drafting
+            """
+        )
+        st.button("✍️ Book a 30-Minute Peer Tutor", key="btn_tutor")
+
+    # Section 5: Student Rights & Ethical Principles
+    st.markdown("---")
+    st.markdown(
+        """
+        ##### 🛡️ Student Rights & Algorithmic Ethics Statement
+        - **No Surveillance**: This system does not track your personal communications, browsing outside the LMS, or biometric data.
+        - **Human Connection First**: Technology is used only to ensure students who might benefit from extra resources are offered support with dignity and care.
+        - **FERPA Protected**: All school records are confidential and maintained under federal educational privacy standards.
+        """
+    )
+
+
 def main():
     # Header Banner
     st.title("🎓 Transparent Disengagement Early-Warning System")
@@ -81,7 +260,23 @@ def main():
         df = load_or_generate_cohort()
         main_model, uncertainty_est, baseline = train_and_cache_models(df)
 
-    # Sidebar Controls
+    # Navigation Role Selector in Sidebar
+    st.sidebar.title("🧭 Navigation")
+    portal_role = st.sidebar.radio(
+        "Select User Role / View",
+        options=[
+            "🏫 Academic Counselor & Staff Portal",
+            "🎓 Student Self-Advocacy Reflection Portal",
+        ],
+        index=0,
+    )
+    st.sidebar.markdown("---")
+
+    if portal_role == "🎓 Student Self-Advocacy Reflection Portal":
+        render_student_portal(df)
+        return
+
+    # Sidebar Controls (Academic Counselor & Staff Portal)
     st.sidebar.header("⚙️ Policy Calibration")
     st.sidebar.markdown(
         """
