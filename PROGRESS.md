@@ -57,6 +57,15 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - Additive epistemic margin penalty for sparse historical data (transfer students).
   - **Review 2 Enhancement**: Probabilistic calibration verification ($ECE = 0.0381$, Brier $= 0.038$, $84.7\%$ interval coverage).
 
+- [x] **Deliverable 15: Granular Testing & Error Handling Guide** (`docs/testing_and_error_handling.md`)
+  - Detailed technical documentation on all 11 automated unit test suites, failure modes, and error boundaries.
+  - Documents missing/malformed input policies, zero-division safeguards, and defensive schema fallbacks.
+
+- [x] **Deliverable 16: Code Comments & Developer Schema / API Reference** (`README.md`, `src/`)
+  - Expanded docstrings, mathematical formulations, and edge-case comments across all core `src/` modules.
+  - Direct 5-signal raw input schema table and 21 engineered feature definitions embedded in `README.md`.
+  - Comprehensive Developer Core API Reference documenting function signatures, inputs, outputs, exceptions, and usage examples.
+
 - [x] **Deliverable 8: Backtesting Framework** (`src/backtest.py`)
   - Temporal holdout split: Weeks 1–10 train / Weeks 11–16 test.
   - Kaplan-Meier Survival Analysis: **KM Median Detection Week 8.95 / 9 (Main) vs Week 15.18 / 16 (Baseline) — 43.6 to 49.0 days (6.2 to 7.0 weeks earlier)** across full cohort.

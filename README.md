@@ -53,7 +53,121 @@ To eliminate data leakage and ensure realistic modeling:
 
 ---
 
-## 4. Before vs. Target vs. Measured Synthesis Table
+## 4. Data Schema Reference
+
+The system processes weekly student records partitioned across an Information Barrier:
+
+### 4.1 Raw Observable Input Schema (`StudentWeeklyRecord`)
+| Family | Field Name | Type | Valid Range | Update Cadence | Educational Interpretation |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Identity** | `student_id` | `str` | `STU_0001`+ | Static | Unique student identifier pseudonymized for FERPA. |
+| **Temporal** | `week` | `int` | `1 .. 16` | Weekly | Discrete semester week index. |
+| **Attendance** | `days_present` | `int` | `0 .. 5` | Daily / Weekly | In-seat days physically present in classroom. |
+| **Attendance** | `days_absent` | `int` | `0 .. 5` | Daily / Weekly | Total absent days (excused + unexcused). |
+| **Attendance** | `tardy_count` | `int` | `0 .. 5` | Daily / Weekly | Class punctuality infractions. |
+| **Attendance** | `unexcused_absences` | `int` | `0 .. 5` | Daily / Weekly | Unexcused truancies without parent verification. |
+| **Activity** | `lms_logins` | `int` | $\ge 0$ | Real-time / Daily | Total authentication sessions logged on LMS. |
+| **Activity** | `content_time_minutes` | `float` | $\ge 0.0$ | Daily / Weekly | Active time interacting with course reading materials. |
+| **Activity** | `assignment_submissions` | `int` | $\ge 0$ | Weekly | Completed deliverables submitted. |
+| **Activity** | `late_submissions` | `int` | $\ge 0$ | Weekly | Deliverables submitted past deadline. |
+| **Activity** | `discussion_posts` | `int` | $\ge 0$ | Weekly | Discussion forum questions or peer replies. |
+| **Assessment** | `quiz_score` | `float?` | `0.0 .. 100.0` | Weekly | Formative quiz percentage (nullable if no quiz). |
+| **Assessment** | `cumulative_score_avg` | `float` | `0.0 .. 100.0` | Weekly | Running semester gradebook weighted average. |
+| **Assessment** | `score_trend_slope` | `float` | $(-\infty, +\infty)$ | Weekly | 3-week linear grade trajectory slope (pts/week). |
+| **Assessment** | `score_variance` | `float` | $\ge 0.0$ | Weekly | Trailing score variance across recent assessments. |
+| **Help-Seeking** | `questions_asked` | `int` | $\ge 0$ | Weekly | In-class or asynchronous questions to instructor. |
+| **Help-Seeking** | `office_hours_attended` | `int` | $\ge 0$ | Weekly | 1-on-1 office hours consultations attended. |
+| **Help-Seeking** | `tutoring_sessions` | `int` | $\ge 0$ | Weekly | Peer tutoring sessions completed. |
+| **Help-Seeking** | `help_seeking_delay_days` | `float` | $\ge 0.0$ | Event-driven | Days between low grade and first help inquiry. |
+| **Feedback** | `survey_sentiment` | `float?` | `-1.0 .. +1.0` | Bi-weekly | Student pulse sentiment polarity (nullable). |
+| **Feedback** | `teacher_note_flag` | `int` | `0, 1, 2` | Weekly | Faculty concern note: 0=None, 1=Mild, 2=Acute. |
+| **Feedback** | `confidence_rating` | `int?` | `1 .. 5` | Bi-weekly | Self-reported academic self-efficacy rating (nullable). |
+
+*Strict Audit Vault (Ground Truth - Never exposed to models)*: `archetype` (`str`), `latent_engagement` (`float`), `is_disengaged` (`bool`).
+
+### 4.2 Engineered Features (`ENGINEERED_FEATURE_NAMES`)
+The model uses 21 engineered behavioral features derived over trailing 3-week windows:
+- **Attendance (4)**: `att_3wk_mean`, `att_trend_slope`, `unexcused_absences_sum`, `tardy_rate`.
+- **Activity (5)**: `lms_logins_3wk_mean`, `content_time_3wk_mean`, `late_submission_ratio`, `logins_per_active_hour` (gaming detection: logins divided by active reading hours), `discussion_posts_3wk_mean`.
+- **Assessment (4)**: `quiz_score_recent`, `cumulative_score_avg`, `score_trend_slope`, `score_variance`.
+- **Help-Seeking (5)**: `office_hours_3wk_sum`, `tutoring_3wk_sum`, `questions_asked_3wk_mean`, `help_seeking_delay_days`, `is_seeking_help` (binary help engagement flag).
+- **Feedback & Sentiment (3)**: `survey_sentiment_recent`, `teacher_concern_flags_3wk`, `confidence_rating_recent`.
+
+---
+
+## 5. Developer Core API Reference
+
+Internal Python module APIs for developers integrating or extending the system:
+
+### 5.1 Feature Extraction Pipeline (`src/features.py`)
+```python
+from src.features import prepare_feature_matrix
+
+X, y, audit_df = prepare_feature_matrix(df: pd.DataFrame)
+```
+- **Inputs**: `df` (`pd.DataFrame`) containing raw student weekly records matching `StudentWeeklyRecord`.
+- **Outputs**:
+  - `X` (`pd.DataFrame`, shape `[N*T, 21]`): Clean, normalized feature matrix with zero NaNs.
+  - `y` (`pd.Series`, shape `[N*T]`): Binary ground truth labels (0 = engaged, 1 = disengaged).
+  - `audit_df` (`pd.DataFrame`, shape `[N*T, 5]`): Protected audit coordinates (`student_id`, `week`, `archetype`, `latent_engagement`, `is_disengaged`).
+- **Exceptions**: Raises `ValueError` if any ground truth column leaks into candidate feature columns.
+
+### 5.2 Calibrated Multi-Signal Model (`src/main_model.py`)
+```python
+from src.main_model import TransparentMultiSignalModel
+
+model = TransparentMultiSignalModel(random_state: int = 42)
+model.fit(X: pd.DataFrame, y: pd.Series) -> TransparentMultiSignalModel
+risk_scores = model.predict_risk_score(X: pd.DataFrame) -> np.ndarray  # p_hat in [0.0, 1.0]
+flags = model.predict(X: pd.DataFrame, threshold: float = 0.50) -> np.ndarray  # bool array
+explanation = model.explain_instance(instance_features: pd.Series, background_X: Optional[pd.DataFrame] = None) -> Dict[str, Any]
+memo_text = model.export_counselor_audit_record(student_id: str, instance_features: pd.Series, explanation: Dict[str, Any]) -> str
+```
+- **Explanation Payload Structure**:
+  - `risk_score`: Calibrated probability $\hat{p} \in [0.0, 1.0]$.
+  - `family_contributions`: `Dict[str, float]` mapping each of the 5 signal families to its risk impact.
+  - `top_risk_drivers`: Top 5 risk-elevating features with plain-language labels and context strings.
+  - `top_protective_factors`: Top 5 protective assets mitigating risk.
+  - `intervention_pathway`: Triage pathway (`RESTO_WELLNESS_CHECK`, `ACADEMIC_INTERVENTION`, `STANDARD_MONITORING`).
+
+### 5.3 Uncertainty Estimation (`src/uncertainty.py`)
+```python
+from src.uncertainty import BootstrappedUncertaintyEstimator
+
+unc = BootstrappedUncertaintyEstimator(n_bootstraps: int = 10, random_state: int = 42)
+unc.fit(X: pd.DataFrame, y: pd.Series) -> BootstrappedUncertaintyEstimator
+mean_r, low_b, up_b, width = unc.predict_with_intervals(X: pd.DataFrame, confidence_level: float = 0.80)
+instance_unc = unc.compute_instance_uncertainty(instance_features: pd.Series, weeks_available: int = 16) -> Dict[str, Any]
+```
+- **Outputs**: Granular confidence interval `[interval_lower, interval_upper]`, `interval_width`, Shannon entropy (aleatoric uncertainty), and automatic transfer-student interval expansion when `weeks_available < 6`.
+
+### 5.4 Benchmark Baseline Model (`src/baseline_model.py`)
+```python
+from src.baseline_model import LaggingAttendanceMarksBaseline
+
+baseline = LaggingAttendanceMarksBaseline(attendance_threshold: float = 0.80, marks_threshold: float = 60.0)
+baseline_risk = baseline.predict_risk_score(df: pd.DataFrame) -> np.ndarray
+baseline_flags = baseline.predict(df: pd.DataFrame) -> np.ndarray  # True if att < 80% OR marks < 60%
+breakdown = baseline.get_signal_contributions(row: pd.Series) -> Dict[str, Any]
+```
+
+### 5.5 Multi-Cohort Sensitivity Engine (`src/sensitivity_analysis.py`)
+```python
+from src.sensitivity_analysis import evaluate_cohort_scenario, SCENARIO_CONFIGURATIONS
+
+results = evaluate_cohort_scenario(
+    scenario_cfg: Dict[str, Any],
+    seed: int = 42,
+    train_end_week: int = 10,
+    test_start_week: int = 11,
+    threshold: float = 0.50,
+    fixed_model: Optional[TransparentMultiSignalModel] = None,
+) -> Dict[str, Any]
+```
+
+---
+
+## 6. Before vs. Target vs. Measured Synthesis Table
 
 Evaluated strictly on the temporal holdout test set (Weeks 11–16, $N=3,000$ student-week observations):
 
@@ -75,7 +189,7 @@ Evaluated strictly on the temporal holdout test set (Weeks 11–16, $N=3,000$ st
 
 ---
 
-## 5. Sensitivity & Stress Testing Across Cohort Compositions
+## 7. Sensitivity & Stress Testing Across Cohort Compositions
 
 Benchmarked across 4 distinct synthetic cohort environments ($N=500$ students each, evaluated on temporal holdout test set):
 
@@ -94,7 +208,7 @@ Benchmarked across 4 distinct synthetic cohort environments ($N=500$ students ea
 
 ---
 
-## 6. Quickstart Guide
+## 8. Quickstart Guide
 
 ### Windows (PowerShell)
 ```powershell

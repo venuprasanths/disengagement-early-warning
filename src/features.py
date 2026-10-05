@@ -47,8 +47,26 @@ ENGINEERED_FEATURE_NAMES: List[str] = [
 
 def extract_student_features(student_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Extracts rolling features for a single student across their available weeks.
-    Assumes student_df is sorted by 'week'.
+    Extracts rolling multi-signal features for a single student across their available observation weeks.
+
+    Parameters:
+        student_df (pd.DataFrame): Time-series slice for an individual student containing
+                                   raw behavioral columns. Must contain 'week' column.
+
+    Returns:
+        pd.DataFrame: Augmented DataFrame including 21 engineered feature columns.
+
+    Mathematical Formulations & Safeguards:
+        - Rolling Window: Trailing 3-week window (min_periods=1 or 2) to capture immediate
+          velocity without losing responsiveness.
+        - Trend Slope: 1st-degree polynomial fit (ordinary least squares) over 3 weeks:
+            slope = sum((t - t_bar) * (y_t - y_bar)) / sum((t - t_bar)^2)
+        - Gaming Divergence Ratio:
+            logins_per_active_hour = lms_logins_3wk_mean / max(content_time_3wk_mean / 60, 0.1)
+          Detects superficial engagement ('signal gaming') where students generate logins
+          without reading course content.
+        - Division by Zero Protection: np.clip(lower=1) or clip(lower=0.1) on denominators.
+        - Missing Survey Imputation: Forward-fill followed by neutral neutral default (0.0).
     """
     student_df = student_df.sort_values("week").copy()
 
@@ -129,10 +147,30 @@ def prepare_feature_matrix(
     df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Transforms raw weekly data into:
-    1. X: Feature matrix containing only engineered non-leaked behavioral features
-    2. y: Binary ground-truth label series (is_disengaged)
-    3. audit_df: Metadata and latent state for backtest evaluation and error analysis
+    Transforms raw weekly cohort data into model-ready matrices while enforcing the Information Barrier.
+
+    Processing Pipeline:
+    1. Pre-condition Barrier Check: Scans input columns to guarantee zero presence of
+       ground-truth columns ('archetype', 'latent_engagement', 'is_disengaged') among features.
+    2. Group-Wise Time-Series Expansion: Iterates over student cohorts independently to compute
+       rolling 3-week statistics without cross-student leakage.
+    3. Matrix Decomposition:
+       - X: Clean engineered 21-feature matrix filled with 0.0 for initial boundary conditions.
+       - y: Binary outcome label series (1 = disengaged, 0 = engaged).
+       - audit_df: Metadata vault preserving student_id, week, and ground-truth audit columns
+         for post-inference evaluation and fairness checking only.
+
+    Parameters:
+        df (pd.DataFrame): Raw weekly cohort dataframe matching StudentWeeklyRecord schema.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
+            - X: DataFrame of shape (N*T, 21) containing engineered features.
+            - y: pd.Series of shape (N*T,) containing binary ground-truth labels.
+            - audit_df: DataFrame of shape (N*T, 5) containing audit identifiers and latent states.
+
+    Raises:
+        ValueError: If any ground-truth column is detected in feature extraction candidates.
     """
     # Verify no raw ground truth is used as features
     feature_candidates = [c for c in df.columns if c not in GROUND_TRUTH_COLUMNS]

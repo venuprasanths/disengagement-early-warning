@@ -14,8 +14,16 @@ from src.schema import BASELINE_FEATURE_COLUMNS, assert_no_ground_truth_leakage
 
 class LaggingAttendanceMarksBaseline:
     """
-    Conventional punitive baseline model.
-    Uses ONLY attendance (days_present / 5 < 80%) OR cumulative score (< 60%).
+    Conventional punitive baseline model representing standard school early-warning heuristics.
+
+    Architectural Blind Spots:
+        1. Attendance Blindness: Students in the 'Quietly Struggling' archetype attend
+           class faithfully (days_present = 5/5) while suffering emotional withdrawal.
+           The baseline achieves only 8.3% recall on these students.
+        2. Signal Gaming Blindness: Students logging in repeatedly without studying are
+           unseen by this model.
+        3. Lagging Response: Marks are only updated after major cumulative quizzes or exams,
+           causing detection to lag by 6 to 7 weeks compared to continuous multi-signal fusion.
     """
 
     def __init__(
@@ -23,6 +31,13 @@ class LaggingAttendanceMarksBaseline:
         attendance_threshold: float = 0.80,
         marks_threshold: float = 60.0,
     ):
+        """
+        Initializes the baseline with standard educational district thresholds.
+
+        Parameters:
+            attendance_threshold (float): Minimum acceptable attendance percentage (default 0.80 = 80%).
+            marks_threshold (float): Passing academic mark percentage (default 60.0 = 60%).
+        """
         self.attendance_threshold = attendance_threshold
         self.marks_threshold = marks_threshold
         self.feature_columns = BASELINE_FEATURE_COLUMNS
@@ -30,9 +45,18 @@ class LaggingAttendanceMarksBaseline:
 
     def predict_risk_score(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes a continuous proxy risk score based purely on attendance deficit
-        and marks deficit.
-        Risk score in [0.0, 1.0].
+        Computes a continuous proxy risk score based purely on attendance and marks deficits.
+
+        Mathematical Formulation:
+            att_risk = clip((attendance_threshold - attendance_rate) / attendance_threshold, 0, 1)
+            marks_risk = clip((marks_threshold - marks) / marks_threshold, 0, 1)
+            combined_risk = max(att_risk, marks_risk)
+
+        Parameters:
+            df (pd.DataFrame): Input DataFrame containing 'days_present' and 'cumulative_score_avg'.
+
+        Returns:
+            np.ndarray: Continuous risk score in range [0.0, 1.0].
         """
         assert_no_ground_truth_leakage(self.feature_columns)
 
@@ -52,8 +76,15 @@ class LaggingAttendanceMarksBaseline:
 
     def predict(self, df: pd.DataFrame, threshold: float = 0.5) -> np.ndarray:
         """
-        Binary flag: True if attendance < 80% OR cumulative marks < 60%.
-        Matches standard school intervention protocols.
+        Binary flag matching standard district intervention policy:
+        Flags True if attendance < 80% OR cumulative marks < 60%.
+
+        Parameters:
+            df (pd.DataFrame): Input DataFrame.
+            threshold (float): Unused compatibility argument (baseline uses hard policy thresholds).
+
+        Returns:
+            np.ndarray: Boolean array of flags.
         """
         assert_no_ground_truth_leakage(self.feature_columns)
         attendance_flag = (df["days_present"] / 5.0) < self.attendance_threshold

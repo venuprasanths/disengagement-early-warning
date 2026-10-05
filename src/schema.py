@@ -4,53 +4,74 @@ Data Schema and Information Barrier Enforcer for Disengagement Early-Warning Sys
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
-# Columns that MUST NEVER be used as features in baseline or main models
+# ==============================================================================
+# INFORMATION BARRIER VAULT & COLUMN GROUPS
+# ==============================================================================
+# The system enforces a strict information barrier between operational features
+# and ground-truth evaluation data. Under no circumstances may any column in
+# GROUND_TRUTH_COLUMNS be accessible during feature extraction, model training,
+# or real-time inference.
+
+# Columns that MUST NEVER be used as features in baseline or main models.
+# These represent unobservable latent engagement states or post-hoc labels.
 GROUND_TRUTH_COLUMNS: List[str] = [
-    "archetype",
-    "latent_engagement",
-    "is_disengaged",
+    "archetype",          # Latent synthetic archetype (e.g., 'quietly_struggling', 'signal_gamer')
+    "latent_engagement",  # Continuous latent state E_{i,t} in [0.0, 1.0]
+    "is_disengaged",      # Binary true outcome label (E_{i,t} < 0.40)
 ]
 
+# Time and identity coordinates for each observation row
 ID_COLUMNS: List[str] = [
-    "student_id",
-    "week",
+    "student_id",         # Unique student identifier (e.g., 'STU_0042')
+    "week",               # Discrete academic semester week index (1 to 16)
 ]
 
+# Signal Family 1: Physical / In-Person Attendance & Punctuality
+# Represents physical presence; note that 'quietly struggling' students attend 5/5 days.
 ATTENDANCE_COLUMNS: List[str] = [
-    "days_present",
-    "days_absent",
-    "tardy_count",
-    "unexcused_absences",
+    "days_present",       # Integer days in classroom seat (0 to 5)
+    "days_absent",        # Integer days absent (0 to 5, excused + unexcused)
+    "tardy_count",        # Punctuality infractions per week (0 to 5)
+    "unexcused_absences", # Absences without verified parental/medical excuse (0 to 5)
 ]
 
+# Signal Family 2: Learning Management System (LMS) Digital Activity
+# Captures digital engagement, time-on-task, and submission pacing.
 ACTIVITY_COLUMNS: List[str] = [
-    "lms_logins",
-    "content_time_minutes",
-    "assignment_submissions",
-    "late_submissions",
-    "discussion_posts",
+    "lms_logins",              # Count of authentication sessions logged in LMS portal
+    "content_time_minutes",    # Time actively reading/interacting with course materials (minutes)
+    "assignment_submissions",  # Total weekly deliverables submitted
+    "late_submissions",        # Count of deliverables submitted past published deadlines
+    "discussion_posts",        # Peer/instructor forum discussion contributions
 ]
 
+# Signal Family 3: Assessment Trends & Academic Mastery Trajectory
+# Focuses on velocity, variance, and rolling momentum rather than static snapshots.
 ASSESSMENT_COLUMNS: List[str] = [
-    "quiz_score",
-    "cumulative_score_avg",
-    "score_trend_slope",
-    "score_variance",
+    "quiz_score",          # Weekly formative evaluation percentage (0.0 to 100.0, nullable)
+    "cumulative_score_avg",# Running semester-to-date weighted gradebook average (0.0 to 100.0)
+    "score_trend_slope",   # 3-week linear regression slope of performance (points/week)
+    "score_variance",      # 3-week trailing grade variance (stability indicator)
 ]
 
+# Signal Family 4: Proactive Academic Help-Seeking & Support Utilization
+# Differentiates struggling students who seek help from those who withdraw silently.
 HELP_SEEKING_COLUMNS: List[str] = [
-    "questions_asked",
-    "office_hours_attended",
-    "tutoring_sessions",
-    "help_seeking_delay_days",
+    "questions_asked",         # In-class or asynchronous questions directed to instructor
+    "office_hours_attended",   # 1-on-1 instructor/TA consultation appointments attended
+    "tutoring_sessions",       # Peer tutoring center sessions completed
+    "help_seeking_delay_days", # Latency between struggling grade and first help inquiry
 ]
 
+# Signal Family 5: Qualitative Student Voice, Morale & Teacher Observations
+# Weak Bayesian priors reflecting emotional state and qualitative faculty concern.
 FEEDBACK_COLUMNS: List[str] = [
-    "survey_sentiment",
-    "teacher_note_flag",
-    "confidence_rating",
+    "survey_sentiment",    # Bi-weekly pulse survey sentiment polarity (-1.0 to +1.0, nullable)
+    "teacher_note_flag",   # Faculty concern level: 0=None, 1=Mild Concern, 2=Acute Flag
+    "confidence_rating",   # Self-reported academic self-efficacy rating (1 to 5, nullable)
 ]
 
+# Complete set of raw behavioral features admissible for feature engineering
 RAW_FEATURE_COLUMNS: List[str] = (
     ATTENDANCE_COLUMNS
     + ACTIVITY_COLUMNS
@@ -59,6 +80,7 @@ RAW_FEATURE_COLUMNS: List[str] = (
     + FEEDBACK_COLUMNS
 )
 
+# Constrained subset utilized strictly by the conventional lagging baseline
 BASELINE_FEATURE_COLUMNS: List[str] = [
     "days_present",
     "days_absent",

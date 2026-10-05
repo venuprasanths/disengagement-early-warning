@@ -37,7 +37,22 @@ class BootstrappedUncertaintyEstimator:
         self.is_fitted = False
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "BootstrappedUncertaintyEstimator":
-        """Fits B bootstrap models on resampled training sets."""
+        """
+        Fits B independent bootstrap estimators on resampled training sets.
+
+        Epistemic Uncertainty Rationale:
+            Resampling training records with replacement simulates data variability
+            and measures model stability. Where training data is dense and unambiguous,
+            the B models converge. In sparse or atypical regions, predictions diverge,
+            yielding a wider empirical confidence band.
+
+        Parameters:
+            X (pd.DataFrame): Training feature matrix.
+            y (pd.Series): Binary ground-truth outcome series.
+
+        Returns:
+            BootstrappedUncertaintyEstimator: The fitted estimator instance (self).
+        """
         assert_no_ground_truth_leakage(list(X.columns))
         X_clean = X[self.feature_names].fillna(0.0).to_numpy()
         y_clean = y.to_numpy()
@@ -71,10 +86,25 @@ class BootstrappedUncertaintyEstimator:
         confidence_level: float = 0.80,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Computes mean risk, lower bound, upper bound, and interval width.
+        Computes mean risk, lower bound, upper bound, and interval width across the bootstrap ensemble.
+
+        Mathematical Formulation:
+            Let {p_1, ..., p_B} be the predicted probabilities from B models.
+            mean_risk = (1 / B) * sum(p_b)
+            lower_bound = Percentile_alpha(preds), where alpha = (1 - confidence_level) / 2
+            upper_bound = Percentile_{1 - alpha}(preds)
+            interval_width = upper_bound - lower_bound
+
+        Parameters:
+            X (pd.DataFrame): Input feature matrix.
+            confidence_level (float): Target coverage level in (0, 1), default 0.80 (80% CI).
 
         Returns:
-            (mean_risk, lower_bound, upper_bound, interval_width)
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                (mean_risk, lower_bound, upper_bound, interval_width)
+
+        Raises:
+            RuntimeError: If called before fit().
         """
         if not self.is_fitted:
             raise RuntimeError("Estimator must be fitted before predict_with_intervals.")
@@ -105,8 +135,27 @@ class BootstrappedUncertaintyEstimator:
         weeks_available: int = 16,
     ) -> Dict[str, Any]:
         """
-        Computes granular uncertainty metrics for an individual student row.
-        Includes missing-data penalty for transfer students.
+        Computes granular uncertainty metrics for an individual student record.
+
+        Implements Transfer-Student Epistemic Guardrail:
+            When a student has fewer than 6 weeks of observed history, an artificial
+            epistemic variance penalty expands the interval bounds to warn counselors
+            against premature labeling:
+                margin = max(interval_width / 2, 0.05 * (6 - weeks_available) + 0.10)
+
+        Parameters:
+            instance_features (pd.Series): Single student feature record.
+            weeks_available (int): Cumulative weeks of observation recorded for this student.
+
+        Returns:
+            Dict[str, Any]:
+                - mean_risk (float): Point prediction risk score.
+                - interval_lower (float): Lower confidence bound in [0.0, 1.0].
+                - interval_upper (float): Upper confidence bound in [0.0, 1.0].
+                - interval_width (float): Epistemic interval width (upper - lower).
+                - entropy (float): Aleatoric Shannon entropy in [0.0, 1.0].
+                - confidence_label (str): 'High Confidence', 'Moderate Confidence', or 'Low Confidence'.
+                - sparse_data_flag (bool): True if student has < 6 weeks of data.
         """
         # Verify feature names do not include ground truth
         assert_no_ground_truth_leakage(self.feature_names)
