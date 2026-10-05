@@ -218,16 +218,19 @@ Benchmarked across 4 distinct synthetic cohort environments ($N=500$ students ea
 # 2. Generate synthetic cohort data
 .\run.ps1 data
 
-# 3. Run comprehensive automated test suite (11 tests)
+# 3. Run comprehensive automated test suite (21 tests)
 .\run.ps1 test
 
 # 4. Run sensitivity & stress testing across cohort compositions
 .\run.ps1 stress
 
-# 5. Execute temporal holdout backtesting
+# 5. Run multi-year longitudinal drift analysis
+.\run.ps1 drift
+
+# 6. Execute temporal holdout backtesting
 .\run.ps1 backtest
 
-# 6. Launch interactive stakeholder dashboard
+# 7. Launch interactive stakeholder dashboard
 .\run.ps1 run
 ```
 
@@ -237,6 +240,7 @@ make setup
 make data
 make test
 make stress
+make drift
 make backtest
 make run
 ```

@@ -23,6 +23,9 @@ test:
 stress:
 	$(PYTHON) -m src.sensitivity_analysis
 
+drift:
+	$(PYTHON) -m src.drift_monitor
+
 backtest:
 	$(PYTHON) -m src.backtest
 

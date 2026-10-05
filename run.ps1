@@ -16,12 +16,16 @@ switch ($Action.ToLower()) {
         & $pythonExe -m data.synthetic_data_generator --output data/synthetic_cohort.csv --students 500 --weeks 16 --seed 42
     }
     "test" {
-        Write-Host "Running comprehensive test suite (11 tests)..." -ForegroundColor Cyan
+        Write-Host "Running comprehensive test suite (21 tests)..." -ForegroundColor Cyan
         & $pythonExe -m pytest tests/ -v
     }
     "stress" {
         Write-Host "Running sensitivity and stress testing across cohort compositions..." -ForegroundColor Cyan
         & $pythonExe -m src.sensitivity_analysis
+    }
+    "drift" {
+        Write-Host "Running multi-year longitudinal drift analysis..." -ForegroundColor Cyan
+        & $pythonExe -m src.drift_monitor
     }
     "backtest" {
         Write-Host "Running temporal holdout backtesting..." -ForegroundColor Cyan
@@ -32,6 +36,6 @@ switch ($Action.ToLower()) {
         & $pythonExe -m streamlit run dashboard/app.py
     }
     default {
-        Write-Host "Usage: .\run.ps1 [setup | data | test | stress | backtest | run]" -ForegroundColor Yellow
+        Write-Host "Usage: .\run.ps1 [setup | data | test | stress | drift | backtest | run]" -ForegroundColor Yellow
     }
 }
