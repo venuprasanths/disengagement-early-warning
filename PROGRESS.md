@@ -66,6 +66,12 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - Direct 5-signal raw input schema table and 21 engineered feature definitions embedded in `README.md`.
   - Comprehensive Developer Core API Reference documenting function signatures, inputs, outputs, exceptions, and usage examples.
 
+- [x] **Deliverable 17: Production LMS & SIS Integration Connectors** (`src/connectors/`, `tests/test_connectors.py`)
+  - Modular integration adapters for standard school feeds: OneRoster v1.2 REST API, Canvas LMS REST API, and PowerSchool SIS REST API.
+  - Defined `BaseConnector` abstract contract with OAuth2/API key authentication, health checks, rate-limiting, and exponential backoff retry.
+  - Implemented `UnifiedIngestionPipeline` that orchestrates parallel extraction, merges multi-source telemetry on `(student_id, week)`, enforces the Information Barrier, and validates against Pydantic schema.
+  - Added 4 automated unit tests verifying authentication, data extraction, mapping fidelity, and downstream ML compatibility (15/15 tests passing).
+
 - [x] **Deliverable 8: Backtesting Framework** (`src/backtest.py`)
   - Temporal holdout split: Weeks 1–10 train / Weeks 11–16 test.
   - Kaplan-Meier Survival Analysis: **KM Median Detection Week 8.95 / 9 (Main) vs Week 15.18 / 16 (Baseline) — 43.6 to 49.0 days (6.2 to 7.0 weeks earlier)** across full cohort.
