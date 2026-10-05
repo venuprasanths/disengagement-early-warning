@@ -409,6 +409,12 @@ To quantify long-term stability and define an operational retraining protocol, w
 
 ### 8.2 Empirical Multi-Year Longitudinal Drift Benchmark
 
+> [!NOTE]
+> **Disambiguation: Multi-Year Drift Simulation (Experiment 3) vs. Reference Benchmark (Experiment 1)**:  
+> The "Year 1 Baseline" figures in the table below (`F1 = 0.958`, `Recall = 95.6%`, `Precision = 96.0%`, `Brier = 0.054`) originate from a **separately trained model evaluated on an independent synthetic cohort sequence** generated with `seed=101` (to establish an independent multi-year sequence with Year 2 `seed=202` and Year 3 `seed=303`).  
+> 
+> These numbers do **NOT** replace, conflict with, or overwrite the locked Review 1/2 reference benchmark (`F1 = 0.902`, `Recall = 85.9%`, `Precision = 94.9%`, `Brier = 0.038`, `seed=42`) reported in Sections 1–5 and 7. The difference reflects natural sampling variation across independently seeded synthetic school cohorts and distinct realization samples, demonstrating that the multi-signal architecture consistently achieves strong performance ($F_1 > 0.90$) across diverse school populations.
+
 We evaluated the trajectory of three deployment strategies across the 3-year timeline:
 1. **Current-Practice Lagging Baseline**: Conventional attendance ($< 80\%$) and marks ($< 60\%$) thresholds.
 2. **Legacy Unretrained Model (Paradigm A)**: The original Year 1 model deployed blindly into Years 2 and 3 without any weight or calibration updates.
