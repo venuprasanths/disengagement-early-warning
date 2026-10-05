@@ -110,6 +110,11 @@ Living status and milestone tracking for the Transparent Disengagement Early-War
   - `tests/test_review2_features.py` (7 tests: plain-language mapping, SHAP explainability, restorative triage, FERPA memorandum, sensitivity scenarios, `use_container_width` cleanup, calibration computation).
   - **11/11 automated tests passing via pytest in 20.08s!**
 
+- [x] **Deliverable 15: Technical Testing & Error Handling Specification** (`docs/testing_and_error_handling.md`) — **NEW IN PHASE 4**
+  - Granular documentation of all 11 unit & edge-case tests, failure modes, and system defenses.
+  - Detailed malformed/missing input policies (forward-fill with uninformative priors, clamped ratios, NaN safety).
+  - Explicit tiered error boundary hierarchy (Data, Model, Uncertainty, Policy guardrails).
+
 ---
 
 ## Review 2 Milestone Checkpoint Review (~70% Target Reached)

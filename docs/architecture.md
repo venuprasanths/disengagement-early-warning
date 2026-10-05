@@ -97,3 +97,11 @@ flowchart TD
   - **Academic Counselor Recall** (sensitivity to catching struggling students).
   - **Student/Parent Precision** (proportion of flagged students who are genuinely struggling vs. falsely stigmatized).
   - Detailed student inspection tab with uncertainty intervals and SHAP feature attributions.
+
+### 2.6 Error Boundaries, Edge Cases & Testing Architecture
+* The system enforces strict runtime error boundaries:
+  - **Ground-Truth Vault Barrier**: `assert_no_ground_truth_leakage()` raises a fatal `ValueError` if audit fields contaminate feature matrices.
+  - **Sparse Data Governance Shield**: Suppresses intervention alerts for transfer students with $< 4$ weeks of records and widens uncertainty bounds ($\ge 0.20$).
+  - **Restorative Wellness Triage**: Reroutes cases of acute morale/confidence drop without disciplinary marks to non-academic wellness support.
+  - **Defensive Imputation**: Strictly trailing `.ffill()` with neutral priors for bi-weekly surveys, avoiding lookahead leakage.
+* Full technical details, failure mode responses, and test specifications are documented in [`docs/testing_and_error_handling.md`](testing_and_error_handling.md).
