@@ -1,0 +1,36 @@
+# ==============================================================================
+# Transparent Disengagement Early-Warning System - Docker Compose Service
+# ==============================================================================
+version: '3.8'
+
+services:
+  early-warning-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: disengagement-early-warning-app
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=production
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    volumes:
+      # Mount data directory for persistent local caching of backtest/drift results
+      - ./data:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
