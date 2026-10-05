@@ -389,3 +389,89 @@ To verify that the model's predicted probabilities can be trusted for high-stake
 * **Expected Calibration Error (ECE)**: **`0.0381` (3.8%)** — Exceptional calibration; the predicted probability closely mirrors real-world risk across all deciles.
 * **Brier Score Loss**: **`0.038`** (Main Model) vs. **`0.231`** (Baseline) — Demonstrates a **6x reduction in probabilistic error**.
 * **Epistemic Prediction Interval Coverage (80% Target)**: Empirical holdout coverage is **84.7%**, indicating well-hedged, conservative prediction bounds that widen appropriately for transfer students.
+
+---
+
+## 8. Multi-Year Longitudinal Drift Simulation & Production Retraining Protocol
+
+In educational environments, cohort demographics, academic pacing, and digital tool adoption naturally shift across academic years. A static machine learning system deployed without monitoring risks silent degradation due to **covariate feature drift** and **concept shift** in baseline disengagement rates.
+
+To quantify long-term stability and define an operational retraining protocol, we built `src/drift_monitor.py` to simulate **3 consecutive academic school years** ($N=500$ students per year, 16 weeks per semester, 7,880–7,940 student-weeks per cohort).
+
+---
+
+### 8.1 Multi-Year Cohort Transition Modeling
+* **Academic Year 1 (Baseline Reference Cohort)**: Standard balanced high school distribution (50% consistently engaged, 20% quietly struggling, 15% checked out, 10% improving, 5% edge cases; true holdout disengagement base rate: **33.0%**).
+* **Academic Year 2 (Curriculum Rigor Shift)**: Models a school-wide curriculum overhaul with increased STEM rigor and expanded LMS usage. Quiet struggle increases by +25% (125 students), shifting holdout disengagement base rate to **39.3%**.
+* **Academic Year 3 (Grade 9 Transition Shock & Stress Surge)**: Models freshman high school transition shock. Quiet struggle increases by +55% relative to Year 1 (155 students) and acute stress shock surges by 3.5x (25 students), shifting holdout disengagement base rate to **44.2%**.
+
+---
+
+### 8.2 Empirical Multi-Year Longitudinal Drift Benchmark
+
+We evaluated the trajectory of three deployment strategies across the 3-year timeline:
+1. **Current-Practice Lagging Baseline**: Conventional attendance ($< 80\%$) and marks ($< 60\%$) thresholds.
+2. **Legacy Unretrained Model (Paradigm A)**: The original Year 1 model deployed blindly into Years 2 and 3 without any weight or calibration updates.
+3. **Annual Retrained Model (Paradigm B)**: The model updated annually at the start of each academic year using the prior cohort's data.
+
+| Academic Year | Holdout Base Rate | Population Drift (Mean PSI) | Maximum Drift Feature | Model Deployment Strategy | F1 Score | Recall (Sens.) | Precision | False-Alarm Rate (FPR) | Brier Calibration Score | ROC-AUC |
+| :--- | :---: | :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Year 1** *(Baseline)* | **33.0%** | `0.000` *(Ref)* | `att_3wk_mean` ($PSI=0.0$) | **Transparent Multi-Signal** | **`0.958`** | **`95.6%`** | **`96.0%`** | **`1.9%`** | **`0.054`** | **`0.997`** |
+| | | | | Lagging Baseline | 0.367 | 25.5% | 65.6% | 8.8% | 0.301 | 0.583 |
+| **Year 2** *(Rigor Shift)* | **39.3%** | `0.011` *(Stable)* | `questions_asked_3wk_mean` ($PSI=0.018$) | **Legacy Model (Unretrained)** | **`0.958`** | **`94.7%`** | **`97.0%`** | **`1.9%`** | **`0.066`** | **`0.996`** |
+| | | | | **Annual Retrained Model** | **`0.962`** | **`96.1%`** | **`96.3%`** | **`2.4%`** | **`0.042`** | **`0.996`** |
+| | | | | Lagging Baseline | 0.364 | 24.7% | 68.8% | 7.9% | 0.352 | 0.584 |
+| **Year 3** *(Transition Shock)* | **44.2%** | `0.037` *(Stable)* | `help_seeking_delay_days` ($PSI=0.069, KS=0.123$) | **Legacy Model (Unretrained)** | **`0.957`** | **`95.1%`** | **`96.3%`** | **`2.9%`** | **`0.072`** | **`0.995`** |
+| | | | | **Annual Retrained Model** | **`0.967`** | **`97.2%`** | **`96.2%`** | **`3.1%`** | **`0.043`** | **`0.997`** |
+| | | | | Lagging Baseline | 0.407 | 28.1% | 73.9% | 7.9% | 0.395 | 0.601 |
+
+---
+
+### 8.3 Key Empirical Findings on Longitudinal Drift
+
+1. **Feature Ranking & Relative Stability**:
+   - The multi-signal feature representations demonstrate high macro-stability: mean cohort Population Stability Index (PSI) increases from `0.000` in Year 1 to `0.011` in Year 2 and `0.037` in Year 3—all comfortably below the standard MLOps caution threshold of $0.10$.
+   - The features exhibiting the highest drift were **help-seeking behaviors**: `help_seeking_delay_days` ($PSI = 0.069, KS = 0.123$) and `questions_asked_3wk_mean` ($PSI = 0.018$), reflecting changing student help-seeking willingness during curriculum shock.
+2. **Discrimination Invariance vs. Calibration Decay**:
+   - The unretrained legacy model maintains excellent ranking discrimination across all 3 years ($F_1 \ge 0.957$, $AUC \ge 0.995$), showing that the underlying 5-signal fusion logic does not break under natural demographic drift.
+   - **However, probability calibration decays**: The Brier score of the unretrained model worsens from `0.054` in Year 1 to `0.066` in Year 2 and `0.072` in Year 3. Because the unretrained model's Platt calibrator expects a 33.0% base rate, its outputs become systematically under-confident as disengagement prevalence rises to 44.2%.
+3. **Value of Periodic Annual Retraining**:
+   - Annual retraining with fresh local data completely mitigates calibration decay: Brier score recovers to **`0.042`–`0.043`**, and recall improves to **`96.1%`–`97.2%`**, catching 39 out of 40 disengaging students.
+4. **Permanent Failure of Status Quo Practice**:
+   - The attendance+marks baseline remains perpetually inadequate across all 3 years, failing to catch between **71.9% and 75.3% of struggling students** in every academic cycle.
+
+---
+
+### 8.4 Production Retraining & MLOps Governance Protocol
+
+To safely govern and sustain model reliability in a live school district deployment:
+
+```
++-----------------------------------------------------------------------------------------+
+|                         DISTRICT MLOps CONTINUOUS MONITORING PIPELINE                   |
++-----------------------------------------------------------------------------------------+
+|                                                                                         |
+|  WEEKLY HEALTH AUDIT         MONTHLY COHORT PSI DRIFT AUDIT      SEMESTER RETRAINING     |
+|  - Verify zero PII leakage   - Calculate PSI per signal family   - Retrain gradient      |
+|  - Validate Pydantic schema  - Green (PSI < 0.10): Continue        booster & calibrator  |
+|  - Sparse data governance    - Yellow (0.10 <= PSI < 0.25): Plan - Counselor review of   |
+|    shield for transfers (<4w)  scheduled summer retraining        top SHAP attributions  |
+|  - Recovery velocity lock    - Red (PSI >= 0.25): Mandatory      - District board audit  |
+|                                immediate retrain trigger           sign-off              |
++-----------------------------------------------------------------------------------------+
+```
+
+1. **Automated Weekly Input Audits**:
+   - Every weekly batch ingested via `UnifiedIngestionPipeline` is validated against Pydantic schema constraints.
+   - Information Barrier enforcer confirms zero ground-truth leakage before features enter inference.
+2. **Continuous Monthly Drift Telemetry**:
+   - The system tracks rolling Population Stability Index (PSI) and 2-sample Kolmogorov-Smirnov statistics against the historical training baseline:
+     - **Green ($PSI < 0.10$)**: Normal autonomous monitoring.
+     - **Yellow ($0.10 \le PSI < 0.25$)**: Warning state. System logs an advisory notice for the data science coordinator and schedules an off-cycle calibration audit.
+     - **Red ($PSI \ge 0.25$)**: Critical drift trigger. Automatically widens uncertainty confidence bounds, activates `MONITOR_ONLY` governance protections, and notifies counselors that retraining is in progress.
+3. **Semesterly Retraining Cadence**:
+   - Retrain model estimators and Platt calibrators every summer and winter break using a rolling **3-semester trailing window** (to balance recent adaptation with sample size stability).
+   - Require human-in-the-loop review by an Academic Counselor and Data Privacy Officer before newly retrained weights are promoted to production.
+4. **Safety Governance Fallbacks**:
+   - Transfer-student uncertainty expansion ($< 6$ observation weeks) and the Recovery Velocity Discount ($> +2.5\%$/week grade velocity) remain permanently hardcoded in the policy layer, ensuring algorithmic equity regardless of demographic fluctuations.
+

@@ -1,0 +1,104 @@
+{
+  "Year_1": {
+    "name": "Academic Year 1 (Baseline Reference Cohort)",
+    "description": "Standard balanced high school cohort composition.",
+    "disengagement_base_rate": 0.33,
+    "mean_cohort_psi": 0.0,
+    "drift_status": "STABLE",
+    "retrain_action": "CONTINUE_MONITORING",
+    "max_drift_feature": {
+      "feature": "att_3wk_mean",
+      "psi": 0.0,
+      "ks_stat": 0.0
+    },
+    "legacy_model_unretrained": {
+      "f1": 0.9585,
+      "recall": 0.9565,
+      "precision": 0.9604,
+      "false_alarm_rate": 0.0194,
+      "brier_score": 0.0543,
+      "roc_auc": 0.9968
+    },
+    "retrained_annual_model": {
+      "f1": 0.9585,
+      "recall": 0.9565,
+      "precision": 0.9604,
+      "false_alarm_rate": 0.0194,
+      "brier_score": 0.0543,
+      "roc_auc": 0.9968
+    },
+    "lagging_baseline": {
+      "f1": 0.3671,
+      "recall": 0.2548,
+      "precision": 0.6562
+    }
+  },
+  "Year_2": {
+    "name": "Academic Year 2 (Curriculum Rigor Increase & Remote Hybrid Shifts)",
+    "description": "Increased STEM difficulty increases quiet struggle by 25%; digital tool usage expands.",
+    "disengagement_base_rate": 0.393,
+    "mean_cohort_psi": 0.011,
+    "drift_status": "STABLE",
+    "retrain_action": "CONTINUE_MONITORING",
+    "max_drift_feature": {
+      "feature": "questions_asked_3wk_mean",
+      "psi": 0.0181,
+      "ks_stat": 0.061
+    },
+    "legacy_model_unretrained": {
+      "f1": 0.9579,
+      "recall": 0.9465,
+      "precision": 0.9696,
+      "false_alarm_rate": 0.0192,
+      "brier_score": 0.0658,
+      "roc_auc": 0.9961
+    },
+    "retrained_annual_model": {
+      "f1": 0.9622,
+      "recall": 0.961,
+      "precision": 0.9634,
+      "false_alarm_rate": 0.0236,
+      "brier_score": 0.0416,
+      "roc_auc": 0.9955
+    },
+    "lagging_baseline": {
+      "f1": 0.3635,
+      "recall": 0.247,
+      "precision": 0.6879
+    }
+  },
+  "Year_3": {
+    "name": "Academic Year 3 (Grade 9 Transition Shock & Post-Disruption Cohort)",
+    "description": "Freshman transition shock: elevated quiet struggle (155) and acute stress events (25).",
+    "disengagement_base_rate": 0.442,
+    "mean_cohort_psi": 0.0369,
+    "drift_status": "STABLE",
+    "retrain_action": "CONTINUE_MONITORING",
+    "max_drift_feature": {
+      "feature": "help_seeking_delay_days",
+      "psi": 0.0693,
+      "ks_stat": 0.1234
+    },
+    "legacy_model_unretrained": {
+      "f1": 0.9571,
+      "recall": 0.9512,
+      "precision": 0.9631,
+      "false_alarm_rate": 0.0289,
+      "brier_score": 0.0718,
+      "roc_auc": 0.9952
+    },
+    "retrained_annual_model": {
+      "f1": 0.967,
+      "recall": 0.9723,
+      "precision": 0.9618,
+      "false_alarm_rate": 0.0306,
+      "brier_score": 0.0427,
+      "roc_auc": 0.9966
+    },
+    "lagging_baseline": {
+      "f1": 0.4074,
+      "recall": 0.2813,
+      "precision": 0.738
+    }
+  }
+}
